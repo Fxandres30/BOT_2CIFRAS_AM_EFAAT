@@ -8,7 +8,42 @@ function decodeJid(jid = "") {
   return r?.user ? r.user + "@s.whatsapp.net" : jid;
 }
 
+// 🔎 detectar telefono o LID correctamente
+function parsearJid(jid = "") {
+
+  if (jid.includes("@lid")) {
+    return {
+      telefono: null,
+      lid: jid
+    };
+  }
+
+  if (jid.includes("@s.whatsapp.net")) {
+
+    const numero = jid
+      .replace("@s.whatsapp.net", "")
+      .replace(/^57/, "");
+
+    // teléfono real
+    if (numero.length <= 12) {
+      return {
+        telefono: numero,
+        lid: null
+      };
+    }
+
+    // ID largo → convertir a LID
+    return {
+      telefono: null,
+      lid: numero + "@lid"
+    };
+  }
+
+  return { telefono: null, lid: null };
+}
+
 export async function procesarPago(sock, msg, configGrupo) {
+
   console.log("\n💰 procesarPago ACTIVADO");
 
   const sticker = msg.message?.stickerMessage;
@@ -20,55 +55,87 @@ export async function procesarPago(sock, msg, configGrupo) {
 
   console.log("🧩 Sticker ID:", stickerID);
 
-  // 👤 QUIÉN ENVÍA EL STICKER
   const remitente = decodeJid(
     msg.key.participant || msg.key.remoteJid
   );
 
   console.log("👤 Remitente:", remitente);
 
-  // 🔒 SOLO ADMINS
   if (!ADMINS.includes(remitente)) {
-    console.log("⛔ No es admin, ignorado");
+    console.log("⛔ No es admin");
     return;
   }
 
-  // 🎯 VALIDAR STICKER
   if (stickerID !== STICKER_PAGO_ID) {
     console.log("⛔ Sticker no válido");
     return;
   }
 
-  // 🧠 CLIENTE DESDE EL STICKER RESPONDIDO
+  // cliente citado
   const clienteRaw =
     sticker.contextInfo?.participant ||
     sticker.contextInfo?.remoteJid ||
     "";
 
-  const cliente = decodeJid(clienteRaw);
-  const contacto = cliente
-    .replace("@s.whatsapp.net", "")
-    .replace(/^57/, "");
+  const clienteJid = decodeJid(clienteRaw);
 
-  console.log("📞 Cliente detectado:", contacto);
+  console.log("👤 Cliente JID:", clienteJid);
 
-  if (!contacto) {
-    console.log("⚠️ No se pudo detectar cliente");
+  const { telefono, lid } = parsearJid(clienteJid);
+
+  let telefonoFinal = telefono;
+  let lidFinal = lid;
+
+  // si llega telefono buscar lid
+  if (telefonoFinal) {
+
+    const { data } = await supabase
+      .from("usuarios")
+      .select("lid")
+      .eq("telefono", telefonoFinal)
+      .limit(1);
+
+    if (data?.length) {
+      lidFinal = data[0].lid;
+    }
+
+  }
+
+  // si llega lid buscar telefono
+  if (!telefonoFinal && lidFinal) {
+
+    const { data } = await supabase
+      .from("usuarios")
+      .select("telefono")
+      .eq("lid", lidFinal)
+      .limit(1);
+
+    if (data?.length) {
+      telefonoFinal = data[0].telefono;
+    }
+
+  }
+
+  if (!telefonoFinal) {
+    console.log("⚠️ No se pudo identificar teléfono");
     return;
   }
 
-  // 🔍 BUSCAR RESERVAS
+  console.log("📞 Teléfono final:", telefonoFinal);
+  console.log("🆔 LID final:", lidFinal);
+
+  // buscar reservas
   const { data: reservas, error } = await supabase
     .from(configGrupo.tabla)
     .select("numero, comprador")
-    .eq("contacto", contacto);
+    .eq("contacto", telefonoFinal);
 
   if (error) {
     console.error("❌ Error buscando reservas:", error.message);
     return;
   }
 
-  if (!reservas || !reservas.length) {
+  if (!reservas?.length) {
     console.log("⚠️ Cliente sin reservas");
     return;
   }
@@ -78,11 +145,11 @@ export async function procesarPago(sock, msg, configGrupo) {
 
   console.log("🔢 Números encontrados:", numeros);
 
-  // ✅ MARCAR COMO PAGADO
+  // marcar pagado
   const { error: errorUpdate } = await supabase
     .from(configGrupo.tabla)
     .update({ estado: "pagado" })
-    .eq("contacto", contacto);
+    .eq("contacto", telefonoFinal);
 
   if (errorUpdate) {
     console.error("❌ Error marcando pagado:", errorUpdate.message);
@@ -91,14 +158,15 @@ export async function procesarPago(sock, msg, configGrupo) {
 
   console.log("✅ Pago marcado correctamente");
 
-  // 📩 MENSAJE PRIVADO (SOLO A TI)
   const mensaje = `
+
 ✅ *PAGO CONFIRMADO*
 
 👤 Cliente: *${comprador}*
 📍 Grupo: ${configGrupo.nombre}
 🔢 Números: *( ${numeros.join(" - ")} )*
-  `;
+
+`;
 
   await sock.sendMessage(NUMERO_NOTIFICACION, { text: mensaje });
 
