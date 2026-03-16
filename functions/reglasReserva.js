@@ -9,7 +9,7 @@ export const PALABRAS_NO_PERMITIDAS = [
   "❌", "✅", "✨", "🚨",   // 👈 emojis prohibidos
   "pago", "pague", "tengo", "estaba", "solo", "ultimos",
   "pagado", "reservado", "reservar", "reservados",
-  "grupo", "persona", 
+  "grupo", "persona", "numeritos", "todos", 
 ];
 
 export function textoPermitidoParaReserva(texto) {
