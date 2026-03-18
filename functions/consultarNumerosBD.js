@@ -1,62 +1,81 @@
-// functions/consultasNumeros.js
+// functions/consultarNumerosBD.js
 
-export const consultasNumeros = [
-  "que debo",
-  "debo",
-  "tengo numeros",
-  "tengo números",
-  "mis numeros",
-  "mis números",
-  "cuales son mis numeros",
-  "cuáles son mis números",
-  "que tengo",
-  "qué tengo"
-];
+import { supabase } from "./supabase.js";
 
-export function esConsultaNumeros(texto = "") {
-  const t = texto.toLowerCase().trim();
-  return consultasNumeros.some(p => t.includes(p));
+function parsearJid(jid = "") {
+
+  if (jid.includes("@s.whatsapp.net")) {
+    return {
+      telefono: jid.replace("@s.whatsapp.net", "").replace(/^57/, ""),
+      lid: null
+    };
+  }
+
+  if (jid.includes("@lid")) {
+    return {
+      telefono: null,
+      lid: jid
+    };
+  }
+
+  return { telefono: null, lid: null };
 }
 
-/* 🔥 RESPUESTA CUANDO SÍ TIENE NÚMEROS */
-export function respuestaAleatoriaNumeros(numeros, nombreGrupo = "") {
+export async function obtenerNumerosUsuario(jidUsuario, tabla) {
 
-  const lista = numeros.map(n => `• ${n}`).join("\n");
+  let { telefono, lid } = parsearJid(jidUsuario);
 
-  const respuestas = [
-`📊 Tus números${nombreGrupo ? ` en ${nombreGrupo}` : ""}:
+  let telefonoFinal = telefono;
+  let lidFinal = lid;
 
-${lista}`,
+  // 📞 buscar LID
+  if (telefonoFinal) {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("lid")
+      .eq("telefono", telefonoFinal)
+      .limit(1);
 
-`🎯 Estas son tus jugadas${nombreGrupo ? ` (${nombreGrupo})` : ""}:
+    if (data?.length > 0) {
+      lidFinal = data[0].lid;
+    }
+  }
 
-${lista}`,
+  // 🆔 buscar teléfono
+  if (!telefonoFinal && lidFinal) {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("telefono")
+      .eq("lid", lidFinal)
+      .limit(1);
 
-`🔥 Números activos:
+    if (data?.length > 0) {
+      telefonoFinal = data[0].telefono;
+    } else {
+      console.log("❌ Usuario no encontrado");
+      return [];
+    }
+  }
 
-${lista}`,
+  if (!telefonoFinal) {
+    console.log("⚠️ No se pudo identificar usuario");
+    return [];
+  }
 
-`👀 Tienes apartados:
+  // 🔥 CONSULTA
+  const { data, error } = await supabase
+    .from(tabla)
+    .select("numero, estado, contacto")
+    .eq("contacto", telefonoFinal);
 
-${lista}`,
+  if (error) {
+    console.log("❌ Error DB:", error);
+    return [];
+  }
 
-`💰 Vas con:
+  if (!data.length) return [];
 
-${lista}`
-  ];
-
-  return respuestas[Math.floor(Math.random() * respuestas.length)];
-}
-
-/* ❌ CUANDO NO TIENE */
-export function respuestaSinNumeros() {
-  const respuestas = [
-    "😅 Aún no tienes números registrados.",
-    "❌ No veo jugadas tuyas todavía.",
-    "👀 Todavía no has apartado números.",
-    "🚫 No tienes números en este momento.",
-    "📭 No tienes reservas aún."
-  ];
-
-  return respuestas[Math.floor(Math.random() * respuestas.length)];
+  return data
+    .filter(n => n.estado === "reservado")
+    .map(n => n.numero);
 }

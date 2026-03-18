@@ -8,7 +8,7 @@ import {
   respuestaSinNumeros
 } from "./consultasNumeros.js";
 
-import { obtenerNumerosUsuario } from "./consultarNumerosDB.js";
+import { obtenerNumerosUsuario } from "./consultarNumerosBD.js";
 
 export async function procesarEntrada(sock, msg, configGrupo) {
 
@@ -20,31 +20,11 @@ export async function procesarEntrada(sock, msg, configGrupo) {
   const tipo = getContentType(msg.message);
   console.log("📦 Tipo de mensaje:", tipo);
 
-  console.log("━━━━━━━━━━━━━━━━━━ DEBUG WHATSAPP ━━━━━━━━━━━━━━━━━━");
-
-  console.log("🧩 msg.key:", msg.key);
-  console.log("🔎 remoteJid:", msg?.key?.remoteJid);
-  console.log("🔎 participant:", msg?.key?.participant);
-  console.log("🔎 fromMe:", msg?.key?.fromMe);
-  console.log("🔎 pushName:", msg?.pushName);
-  console.log("🔎 messageId:", msg?.key?.id);
-
-  if (msg?.key?.participant) {
-    console.log("📌 PARTICIPANT LIMPIO:", msg.key.participant.split("@")[0]);
-  }
-
-  if (msg?.key?.remoteJid) {
-    console.log("📌 REMOTE LIMPIO:", msg.key.remoteJid.split("@")[0]);
-  }
-
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
   // 🧩 =============================
   // 🧩 STICKER → PAGO
   // 🧩 =============================
   if (tipo === "stickerMessage") {
-    console.log("🧩 STICKER DETECTADO → pagos");
-
+    console.log("🧩 STICKER → pagos");
     await procesarPago(sock, msg, configGrupo);
     return;
   }
@@ -84,36 +64,47 @@ export async function procesarEntrada(sock, msg, configGrupo) {
 
   if (!texto) return;
 
+  texto = texto.toLowerCase().trim();
+
   console.log("🗣️ TEXTO FINAL:", texto);
 
   // 🔥 =============================
-  // 🔥 CONSULTA DE NÚMEROS (NUEVO)
+  // 🔥 CONSULTA DE NÚMEROS
   // 🔥 =============================
   if (esConsultaNumeros(texto)) {
 
     const jidUsuario = msg.key.participant || msg.key.remoteJid;
 
-    const numeros = await obtenerNumerosUsuario(
-      jidUsuario,
-      configGrupo.tabla
-    );
+    try {
 
-    if (!numeros.length) {
+      const numeros = await obtenerNumerosUsuario(
+        jidUsuario,
+        configGrupo.tabla
+      );
+
+      if (!numeros.length) {
+        await sock.sendMessage(msg.key.remoteJid, {
+          text: respuestaSinNumeros(texto) // ✅ FIX
+        }, { quoted: msg });
+        return;
+      }
+
+      const respuesta = respuestaAleatoriaNumeros(
+        numeros,
+        texto // ✅ FIX CLAVE
+      );
+
       await sock.sendMessage(msg.key.remoteJid, {
-        text: respuestaSinNumeros()
+        text: respuesta
       }, { quoted: msg });
 
-      return;
+    } catch (err) {
+      console.log("❌ Error consultando números:", err);
+
+      await sock.sendMessage(msg.key.remoteJid, {
+        text: "❌ Error consultando tus números, intenta de nuevo."
+      }, { quoted: msg });
     }
-
-    const respuesta = respuestaAleatoriaNumeros(
-      numeros,
-      configGrupo.nombre
-    );
-
-    await sock.sendMessage(msg.key.remoteJid, {
-      text: respuesta
-    }, { quoted: msg });
 
     return;
   }
