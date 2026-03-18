@@ -2,6 +2,8 @@ import { ADMINS, STICKER_PAGO_ID, NUMERO_NOTIFICACION } from "./config.js";
 import { jidDecode } from "@whiskeysockets/baileys";
 import { supabase } from "./supabase.js";
 
+console.log("🔥 VERSION NUEVA PAGOS ACTIVADA");
+
 // 🔥 LIMPIAR NÚMERO (NUEVO)
 const limpiarNumero = (jid = "") => {
   if (!jid) return "";
