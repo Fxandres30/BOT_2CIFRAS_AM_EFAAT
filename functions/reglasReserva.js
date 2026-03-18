@@ -6,7 +6,7 @@ export const PALABRAS_NO_PERMITIDAS = [
   "pm", "hora", "horas", "mañana", "quedan", "personas", 
   "dale", "de acuerdo", "perfecto", "familia", "consignar",
   "confirmado", "gana", "premio", "sorteo", "nequi",
-  "❌", "✅", "✨", "🚨",   // 👈 emojis prohibidos
+  "❌", "✅", "✨", "🚨", "📊",   // 👈 emojis prohibidos
   "pago", "pague", "tengo", "estaba", "solo", "ultimos",
   "pagado", "reservado", "reservar", "reservados",
   "grupo", "persona", 

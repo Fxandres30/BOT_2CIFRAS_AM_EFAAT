@@ -13,6 +13,11 @@ export const GRUPOS_PERMITIDOS = {
   "120363420487085193@g.us": {
     nombre: "#3 Efaat Clup",
     tabla:  "reservas_dos_cifras" // 👈 NOMBRE REAL
-  }
+  },
   
+  "120363425078329823@g.us": {
+    nombre: "Grupo PRUEVA",
+    tabla:  "reservas_dos_cifras" // 👈 NOMBRE REAL
+  }
 };
+

@@ -2,7 +2,16 @@ import { getContentType } from "@whiskeysockets/baileys";
 import { procesarReserva } from "./reservas.js";
 import { procesarPago } from "./pagos.js";
 
+import {
+  esConsultaNumeros,
+  respuestaAleatoriaNumeros,
+  respuestaSinNumeros
+} from "./consultasNumeros.js";
+
+import { obtenerNumerosUsuario } from "./consultarNumerosDB.js";
+
 export async function procesarEntrada(sock, msg, configGrupo) {
+
   console.log("📩 MENSAJE DETECTADO");
   console.log("👤 Usuario:", msg.pushName || "Sin nombre");
   console.log("📍 Grupo:", configGrupo.nombre);
@@ -13,35 +22,35 @@ export async function procesarEntrada(sock, msg, configGrupo) {
 
   console.log("━━━━━━━━━━━━━━━━━━ DEBUG WHATSAPP ━━━━━━━━━━━━━━━━━━");
 
-console.log("🧩 msg.key:", msg.key);
-console.log("🔎 remoteJid:", msg?.key?.remoteJid);
-console.log("🔎 participant:", msg?.key?.participant);
-console.log("🔎 fromMe:", msg?.key?.fromMe);
-console.log("🔎 pushName:", msg?.pushName);
-console.log("🔎 messageId:", msg?.key?.id);
+  console.log("🧩 msg.key:", msg.key);
+  console.log("🔎 remoteJid:", msg?.key?.remoteJid);
+  console.log("🔎 participant:", msg?.key?.participant);
+  console.log("🔎 fromMe:", msg?.key?.fromMe);
+  console.log("🔎 pushName:", msg?.pushName);
+  console.log("🔎 messageId:", msg?.key?.id);
 
-if (msg?.key?.participant) {
-  console.log("📌 PARTICIPANT LIMPIO:", msg.key.participant.split("@")[0]);
-}
+  if (msg?.key?.participant) {
+    console.log("📌 PARTICIPANT LIMPIO:", msg.key.participant.split("@")[0]);
+  }
 
-if (msg?.key?.remoteJid) {
-  console.log("📌 REMOTE LIMPIO:", msg.key.remoteJid.split("@")[0]);
-}
+  if (msg?.key?.remoteJid) {
+    console.log("📌 REMOTE LIMPIO:", msg.key.remoteJid.split("@")[0]);
+  }
 
-console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
   // 🧩 =============================
-  // 🧩 SI ES STICKER → PROCESAR PAGO
+  // 🧩 STICKER → PAGO
   // 🧩 =============================
   if (tipo === "stickerMessage") {
-    console.log("🧩 STICKER DETECTADO → enviando a pagos.js");
+    console.log("🧩 STICKER DETECTADO → pagos");
 
     await procesarPago(sock, msg, configGrupo);
-
-    return; // ⛔ IMPORTANTE: NO sigue a reservas
+    return;
   }
 
   // 📝 =============================
-  // 📝 PROCESAR TEXTO NORMAL
+  // 📝 TEXTO
   // 📝 =============================
   let texto = "";
 
@@ -61,7 +70,7 @@ console.log("━━━━━━━━━━━━━━━━━━━━━━�
     texto = msg.message.listResponseMessage?.title;
   }
 
-  // 🧠 Mensaje citado
+  // 🧠 mensaje citado
   if (!texto && msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
     const quoted = msg.message.extendedTextMessage.contextInfo.quotedMessage;
     const quotedType = getContentType(quoted);
@@ -73,10 +82,42 @@ console.log("━━━━━━━━━━━━━━━━━━━━━━�
     }
   }
 
-  console.log("🗣️ TEXTO FINAL:", texto);
-
   if (!texto) return;
 
-  // 👉 delegamos a reservas
+  console.log("🗣️ TEXTO FINAL:", texto);
+
+  // 🔥 =============================
+  // 🔥 CONSULTA DE NÚMEROS (NUEVO)
+  // 🔥 =============================
+  if (esConsultaNumeros(texto)) {
+
+    const jidUsuario = msg.key.participant || msg.key.remoteJid;
+
+    const numeros = await obtenerNumerosUsuario(
+      jidUsuario,
+      configGrupo.tabla
+    );
+
+    if (!numeros.length) {
+      await sock.sendMessage(msg.key.remoteJid, {
+        text: respuestaSinNumeros()
+      }, { quoted: msg });
+
+      return;
+    }
+
+    const respuesta = respuestaAleatoriaNumeros(
+      numeros,
+      configGrupo.nombre
+    );
+
+    await sock.sendMessage(msg.key.remoteJid, {
+      text: respuesta
+    }, { quoted: msg });
+
+    return;
+  }
+
+  // 👉 RESERVAS (flujo normal)
   await procesarReserva(sock, msg, texto, configGrupo);
 }
