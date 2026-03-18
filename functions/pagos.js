@@ -4,7 +4,7 @@ import { supabase } from "./supabase.js";
 
 console.log("🔥 VERSION NUEVA PAGOS ACTIVADA");
 
-// 🔥 LIMPIAR NÚMERO (NUEVO)
+// 🔥 LIMPIAR NÚMERO
 const limpiarNumero = (jid = "") => {
   if (!jid) return "";
   return jid.split("@")[0].replace(/\D/g, "");
@@ -16,33 +16,23 @@ function decodeJid(jid = "") {
   return r?.user ? r.user + "@s.whatsapp.net" : jid;
 }
 
-// 🔎 detectar telefono o LID correctamente
+// 🔎 detectar telefono o LID
 function parsearJid(jid = "") {
 
   if (jid.includes("@lid")) {
-    return {
-      telefono: null,
-      lid: jid
-    };
+    return { telefono: null, lid: jid };
   }
 
   if (jid.includes("@s.whatsapp.net")) {
-
     const numero = jid
       .replace("@s.whatsapp.net", "")
       .replace(/^57/, "");
 
     if (numero.length <= 12) {
-      return {
-        telefono: numero,
-        lid: null
-      };
+      return { telefono: numero, lid: null };
     }
 
-    return {
-      telefono: null,
-      lid: numero + "@lid"
-    };
+    return { telefono: null, lid: numero + "@lid" };
   }
 
   return { telefono: null, lid: null };
@@ -61,8 +51,9 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   console.log("🧩 Sticker ID:", stickerID);
 
-  // 🔥 REMITENTE LIMPIO (CLAVE)
+  // 🔥 REMITENTE REAL (FIX FINAL)
   const remitenteRaw = decodeJid(
+    msg.key.participantPn || // 🔥 CLAVE
     msg.key.participant ||
     msg.participant ||
     msg.key.remoteJid ||
@@ -74,9 +65,9 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
   console.log("👤 Remitente RAW:", remitenteRaw);
   console.log("📌 Número remitente:", numeroRemitente);
 
-  // 🔥 VALIDACIÓN ADMIN CORRECTA
+  // 🔥 VALIDAR ADMIN
   const esAdmin = ADMINS.some(
-    (admin) => limpiarNumero(admin) === numeroRemitente
+    (admin) => limpiarNumero(admin.trim()) === numeroRemitente
   );
 
   if (!esAdmin) {
@@ -86,13 +77,15 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   console.log("✅ ES ADMIN");
 
+  // 🔒 VALIDAR STICKER
   if (stickerID !== STICKER_PAGO_ID) {
     console.log("⛔ Sticker no válido");
     return;
   }
 
-  // cliente citado
+  // 🔥 CLIENTE REAL (FIX FINAL)
   const clienteRaw =
+    sticker.contextInfo?.participantPn || // 🔥 CLAVE
     sticker.contextInfo?.participant ||
     sticker.contextInfo?.remoteJid ||
     "";
@@ -108,7 +101,6 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   // 🔍 buscar lid si hay teléfono
   if (telefonoFinal) {
-
     const { data } = await supabase
       .from("usuarios")
       .select("lid")
@@ -122,7 +114,6 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   // 🔍 buscar teléfono si hay lid
   if (!telefonoFinal && lidFinal) {
-
     const { data } = await supabase
       .from("usuarios")
       .select("telefono")
@@ -142,7 +133,7 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
   console.log("📞 Teléfono final:", telefonoFinal);
   console.log("🆔 LID final:", lidFinal);
 
-  // buscar reservas
+  // 🔎 buscar reservas
   const { data: reservas, error } = await supabase
     .from(configGrupo.tabla)
     .select("numero, comprador")
@@ -163,7 +154,7 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   console.log("🔢 Números encontrados:", numeros);
 
-  // marcar pagado
+  // ✅ marcar pagado
   const { error: errorUpdate } = await supabase
     .from(configGrupo.tabla)
     .update({ estado: "pagado" })
@@ -176,6 +167,7 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   console.log("✅ Pago marcado correctamente");
 
+  // 📤 notificación
   const mensaje = `
 ✅ *PAGO CONFIRMADO*
 
