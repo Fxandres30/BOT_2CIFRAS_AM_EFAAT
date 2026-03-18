@@ -104,7 +104,7 @@ function frasesConSaludo(saludo, lista) {
 
 function frasesSinSaludo(lista) {
   return [
-    `Tienes el *${lista}* reservado ✅`,
+    `Tiene el *${lista}* reservado ✅`,
     `Vas con *${lista}* hasta el momento 🔥`,
     `Listo, Por ahora llevas el *${lista}* reservados  ✅`,
     `Tus números apartados son : *${lista}* 🎯`
@@ -114,10 +114,10 @@ function frasesSinSaludo(lista) {
 // 🔹 PAGADOS
 function frasesPagadasConSaludo(saludo, lista) {
   return [
-    `*${saludo}*\n\nYa tienes el *${lista}* pagos ✅`,
+    `*${saludo}*\n\nYa tiene el *${lista}* pagos ✅`,
     `*${saludo}*\n\nTus números *${lista}* están confirmados 💰`,
     `*${saludo}*\n\nEl *${lista}* ya está pago 🔥`,
-    `*${saludo}*\n\nTodo listo, *${lista}* confirmado 🎯`
+    `*${saludo}*\n\nTodo listo, *${lista}* confirmados 🎯`
   ];
 }
 

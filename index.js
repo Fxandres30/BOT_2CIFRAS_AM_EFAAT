@@ -15,11 +15,22 @@ import { Boom } from "@hapi/boom";
 import { encolarMensaje } from "./functions/colaGrupos.js";
 import { procesarEntrada } from "./functions/entrada.js";
 import { GRUPOS_PERMITIDOS } from "./functions/grupos.js";
+import { escanearGrupos } from "./functions/scannerGrupos.js";
 
-console.log("🚀 BOT BÁSICO INICIADO");
+console.log("🚀 BOT INICIANDO...");
 
 let sock;
 let starting = false;
+
+// 🔥 FUNCIÓN CLAVE: OBTENER USUARIO REAL
+function obtenerJidUsuario(msg) {
+  return (
+    msg.key.participant || 
+    msg.participant || 
+    msg.key.participantPn || 
+    null
+  );
+}
 
 async function startBot() {
   if (starting) return;
@@ -48,9 +59,18 @@ async function startBot() {
       }
 
       if (connection === "open") {
-        console.log("✅ CONECTADO A WHATSAPP");
-        starting = false;
-      }
+  console.log("✅ CONECTADO A WHATSAPP");
+
+  // 🔥 ejecutar escáner al iniciar
+  escanearGrupos(sock);
+
+  // 🔥 ejecutar cada 1 minuto (PRUEBA)
+  setInterval(() => {
+    escanearGrupos(sock);
+  }, 1000 * 60 * 60 * 6);
+
+  starting = false;
+}
 
       if (connection === "close") {
         const statusCode =
@@ -66,34 +86,43 @@ async function startBot() {
       }
     });
 
-    // 📩 ÚNICO LISTENER DE MENSAJES
+    // 📩 ÚNICO LISTENER (🔥 IMPORTANTE)
     sock.ev.on("messages.upsert", ({ messages, type }) => {
-  if (type !== "notify") return;
+      if (type !== "notify") return;
 
-  for (const msg of messages) {
-    if (!msg?.message) continue;
-    if (msg.key.fromMe) continue;
+      for (const msg of messages) {
+        if (!msg?.message) continue;
+        if (msg.key.fromMe) continue;
 
-    const grupoId = msg.key.remoteJid;
-if (!grupoId?.endsWith("@g.us")) continue;
+        const grupoId = msg.key.remoteJid;
+        if (!grupoId?.endsWith("@g.us")) continue;
 
-// 📌 MOSTRAR ID Y NOMBRE DEL GRUPO
-const nombreGrupo = msg.pushName || "Sin nombre";
-console.log("📌 MENSAJE EN GRUPO:");
-console.log("➡️ ID:", grupoId);
-console.log("➡️ Nombre:", msg.key.participant);
-console.log("----------------------------");
+        if (!GRUPOS_PERMITIDOS[grupoId]) continue;
 
+        // 🔥 USUARIO REAL
+        const jidUsuario = obtenerJidUsuario(msg);
 
-    if (!GRUPOS_PERMITIDOS[grupoId]) {
-      continue; // ⛔ grupo no autorizado
-    }
+        if (!jidUsuario) {
+          console.log("⚠️ No se pudo obtener usuario");
+          continue;
+        }
 
-    encolarMensaje(grupoId, async () => {
-      await procesarEntrada(sock, msg, GRUPOS_PERMITIDOS[grupoId]);
+        console.log("📌 MENSAJE EN GRUPO:");
+        console.log("➡️ ID:", grupoId);
+        console.log("➡️ Usuario:", jidUsuario);
+        console.log("----------------------------");
+
+        // 🔥 TODO pasa por entrada
+        encolarMensaje(grupoId, async () => {
+          await procesarEntrada(
+            sock,
+            msg,
+            GRUPOS_PERMITIDOS[grupoId],
+            jidUsuario // 👈 CLAVE
+          );
+        });
+      }
     });
-  }
-});
 
   } catch (err) {
     console.error("❌ Error crítico:", err);

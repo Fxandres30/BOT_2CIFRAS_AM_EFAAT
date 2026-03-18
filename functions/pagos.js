@@ -1,45 +1,54 @@
 import { ADMINS, STICKER_PAGO_ID, NUMERO_NOTIFICACION } from "./config.js";
-import { jidDecode } from "@whiskeysockets/baileys";
 import { supabase } from "./supabase.js";
 
-console.log("🔥 VERSION NUEVA PAGOS ACTIVADA");
+console.log("🔥 PAGOS ALINEADO");
 
-// 🧠 NORMALIZAR JID (🔥 CLAVE)
-function decodeJid(jid = "") {
-  if (!jid) return jid;
+// 🔥 limpiar número
+const limpiarNumero = (jid = "") => jid.split("@")[0];
 
-  // 👉 convertir @lid → @s.whatsapp.net
-  if (jid.endsWith("@lid")) {
-    return jid.split("@")[0] + "@s.whatsapp.net";
+// 🔥 obtener usuario desde JID (MISMA LÓGICA QUE RESERVAS)
+async function obtenerUsuario(jidUsuario) {
+
+  let telefono = null;
+  let lid = null;
+
+  if (jidUsuario.includes("@s.whatsapp.net")) {
+    telefono = jidUsuario.replace("@s.whatsapp.net", "").replace(/^57/, "");
   }
 
-  const r = jidDecode(jid);
-  return r?.user ? r.user + "@s.whatsapp.net" : jid;
+  if (jidUsuario.includes("@lid")) {
+    lid = jidUsuario;
+  }
+
+  let telefonoFinal = telefono;
+  let lidFinal = lid;
+
+  // buscar lid
+  if (telefonoFinal) {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("lid")
+      .eq("telefono", telefonoFinal)
+      .limit(1);
+
+    if (data?.length) lidFinal = data[0].lid;
+  }
+
+  // buscar telefono
+  if (!telefonoFinal && lidFinal) {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("telefono")
+      .eq("lid", lidFinal)
+      .limit(1);
+
+    if (data?.length) telefonoFinal = data[0].telefono;
+  }
+
+  return { telefonoFinal, lidFinal };
 }
 
-// 🔎 detectar telefono o LID (esto sí lo dejamos)
-function parsearJid(jid = "") {
-
-  if (jid.includes("@lid")) {
-    return { telefono: null, lid: jid };
-  }
-
-  if (jid.includes("@s.whatsapp.net")) {
-    const numero = jid
-      .replace("@s.whatsapp.net", "")
-      .replace(/^57/, "");
-
-    if (numero.length <= 12) {
-      return { telefono: numero, lid: null };
-    }
-
-    return { telefono: null, lid: numero + "@lid" };
-  }
-
-  return { telefono: null, lid: null };
-}
-
-export async function procesarPago(sock, msg, configGrupo) {
+export async function procesarPago(sock, msg, configGrupo, jidUsuario) {
 
   console.log("\n💰 procesarPago ACTIVADO");
 
@@ -52,73 +61,41 @@ export async function procesarPago(sock, msg, configGrupo) {
 
   console.log("🧩 Sticker ID:", stickerID);
 
-  // 🔥 REMITENTE (SIN LIMPIAR)
-  const remitente = decodeJid(
-    msg.key.participant ||
-    msg.participant ||
-    msg.key.remoteJid ||
-    ""
-  );
+  // 🔥 VALIDAR ADMIN POR NÚMERO (FIX REAL)
+  const numeroUsuario = limpiarNumero(jidUsuario);
 
-  console.log("👤 Remitente:", remitente);
+  const esAdmin = ADMINS.includes(numeroUsuario);
 
-  // ✅ VALIDACIÓN DIRECTA
-  if (!ADMINS.includes(remitente)) {
+  if (!esAdmin) {
     console.log("⛔ No es admin");
     return;
   }
 
   console.log("✅ ES ADMIN");
 
-  // 🔒 VALIDAR STICKER
+  // 🔒 validar sticker
   if (stickerID !== STICKER_PAGO_ID) {
     console.log("⛔ Sticker no válido");
     return;
   }
 
-  // 🔥 CLIENTE (MISMA LÓGICA)
-  const clienteRaw =
+  // 🔥 CLIENTE
+  const clienteJid =
     sticker.contextInfo?.participant ||
     sticker.contextInfo?.remoteJid ||
-    "";
+    null;
 
-  const clienteJid = decodeJid(clienteRaw);
+  if (!clienteJid) {
+    console.log("⚠️ No se pudo obtener cliente");
+    return;
+  }
 
   console.log("👤 Cliente JID:", clienteJid);
 
-  const { telefono, lid } = parsearJid(clienteJid);
-
-  let telefonoFinal = telefono;
-  let lidFinal = lid;
-
-  // 🔍 buscar lid si hay teléfono
-  if (telefonoFinal) {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("lid")
-      .eq("telefono", telefonoFinal)
-      .limit(1);
-
-    if (data?.length) {
-      lidFinal = data[0].lid;
-    }
-  }
-
-  // 🔍 buscar teléfono si hay lid
-  if (!telefonoFinal && lidFinal) {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("telefono")
-      .eq("lid", lidFinal)
-      .limit(1);
-
-    if (data?.length) {
-      telefonoFinal = data[0].telefono;
-    }
-  }
+  const { telefonoFinal, lidFinal } = await obtenerUsuario(clienteJid);
 
   if (!telefonoFinal) {
-    console.log("⚠️ No se pudo identificar teléfono");
+    console.log("⚠️ No se pudo identificar teléfono del cliente");
     return;
   }
 
@@ -158,9 +135,8 @@ export async function procesarPago(sock, msg, configGrupo) {
   }
 
   console.log("✅ Pago marcado correctamente");
-
-  // 📤 notificación
-  const mensaje = `
+// 📤 notificación
+const mensaje = `
 ✅ *PAGO CONFIRMADO*
 
 👤 Cliente: *${comprador}*
@@ -168,7 +144,13 @@ export async function procesarPago(sock, msg, configGrupo) {
 🔢 Números: *( ${numeros.join(" - ")} )*
 `;
 
+if (Array.isArray(NUMERO_NOTIFICACION)) {
+  for (const numero of NUMERO_NOTIFICACION) {
+    await sock.sendMessage(numero, { text: mensaje });
+  }
+} else {
   await sock.sendMessage(NUMERO_NOTIFICACION, { text: mensaje });
+}
 
-  console.log("📤 Confirmación enviada a tu privado");
+console.log("📤 Confirmación enviada a notificaciones");
 }

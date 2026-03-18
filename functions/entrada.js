@@ -10,23 +10,7 @@ import {
 
 import { obtenerNumerosUsuario } from "./consultarNumerosBD.js";
 
-// 🔥 LIMPIAR NÚMERO (NUEVO)
-const limpiarNumero = (jid = "") => {
-  if (!jid) return "";
-  return jid.split("@")[0].replace(/\D/g, "");
-};
-
-// 🔥 SACAR JID REAL (ANTI BUG WHATSAPP)
-const obtenerJidUsuario = (msg) => {
-  return (
-    msg.key.participant ||
-    msg.participant ||
-    msg.key.remoteJid ||
-    ""
-  );
-};
-
-// 🔥 FUNCIÓN NUEVA (NO BORRA NADA)
+// 🔥 escribir con delay
 async function enviarConEscribiendo(sock, jid, texto, quoted) {
   try {
     await sock.readMessages([quoted.key]);
@@ -44,7 +28,7 @@ async function enviarConEscribiendo(sock, jid, texto, quoted) {
   }
 }
 
-export async function procesarEntrada(sock, msg, configGrupo) {
+export async function procesarEntrada(sock, msg, configGrupo, jidUsuario) {
 
   console.log("📩 MENSAJE DETECTADO");
   console.log("👤 Usuario:", msg.pushName || "Sin nombre");
@@ -54,18 +38,14 @@ export async function procesarEntrada(sock, msg, configGrupo) {
   const tipo = getContentType(msg.message);
   console.log("📦 Tipo de mensaje:", tipo);
 
-  // 🔥 USUARIO LIMPIO (NUEVO)
-  const jidUsuarioRaw = obtenerJidUsuario(msg);
-  const numeroUsuario = limpiarNumero(jidUsuarioRaw);
-
-  console.log("📌 JID RAW:", jidUsuarioRaw);
-  console.log("📌 NÚMERO LIMPIO:", numeroUsuario);
+  // 🔥 USUARIO UNIFICADO
+  console.log("📌 JID USUARIO:", jidUsuario);
 
   // 🧩 STICKER → PAGO
   if (tipo === "stickerMessage") {
     console.log("🧩 STICKER → pagos");
 
-    await procesarPago(sock, msg, configGrupo, numeroUsuario); // 👈 LE PASAMOS EL LIMPIO
+    await procesarPago(sock, msg, configGrupo, jidUsuario);
     return;
   }
 
@@ -112,7 +92,7 @@ export async function procesarEntrada(sock, msg, configGrupo) {
     try {
 
       const numeros = await obtenerNumerosUsuario(
-        numeroUsuario, // 👈 SIEMPRE LIMPIO
+        jidUsuario, // 🔥 SIEMPRE JID REAL
         configGrupo.tabla
       );
 
@@ -157,5 +137,11 @@ export async function procesarEntrada(sock, msg, configGrupo) {
   }
 
   // 👉 RESERVAS
-  await procesarReserva(sock, msg, texto, configGrupo, numeroUsuario); // 👈 TAMBIÉN LIMPIO
+  await procesarReserva(
+    sock,
+    msg,
+    texto,
+    configGrupo,
+    jidUsuario // 🔥 MISMO DATO PARA TODO
+  );
 }

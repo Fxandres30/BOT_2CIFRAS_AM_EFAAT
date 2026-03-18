@@ -8,26 +8,6 @@ import {
 } from "./mensajes.js";
 import { delayEscritura } from "./typing.js";
 
-/* detectar tipo de ID */
-function parsearJid(jid = "") {
-
-  if (jid.includes("@s.whatsapp.net")) {
-    return {
-      telefono: jid.replace("@s.whatsapp.net", "").replace(/^57/, ""),
-      lid: null
-    };
-  }
-
-  if (jid.includes("@lid")) {
-    return {
-      telefono: null,
-      lid: jid
-    };
-  }
-
-  return { telefono: null, lid: null };
-}
-
 /* extraer números */
 function extraerNumeros(texto) {
   return texto
@@ -44,13 +24,53 @@ async function responder(sock, jid, texto, msg, delay = 1500) {
   await sock.sendMessage(jid, { text: texto }, { quoted: msg });
 }
 
-/* PROCESAR RESERVA */
-export async function procesarReserva(sock, msg, texto, configGrupo) {
+/* 🔥 OBTENER USUARIO DESDE JID */
+async function obtenerUsuario(jidUsuario) {
 
-  /* validar texto permitido */
+  let telefono = null;
+  let lid = null;
+
+  if (jidUsuario.includes("@s.whatsapp.net")) {
+    telefono = jidUsuario.replace("@s.whatsapp.net", "").replace(/^57/, "");
+  }
+
+  if (jidUsuario.includes("@lid")) {
+    lid = jidUsuario;
+  }
+
+  let telefonoFinal = telefono;
+  let lidFinal = lid;
+
+  // buscar lid
+  if (telefonoFinal) {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("lid")
+      .eq("telefono", telefonoFinal)
+      .limit(1);
+
+    if (data?.length) lidFinal = data[0].lid;
+  }
+
+  // buscar telefono
+  if (!telefonoFinal && lidFinal) {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("telefono")
+      .eq("lid", lidFinal)
+      .limit(1);
+
+    if (data?.length) telefonoFinal = data[0].telefono;
+  }
+
+  return { telefonoFinal, lidFinal };
+}
+
+/* PROCESAR RESERVA */
+export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario) {
+
   if (!textoPermitidoParaReserva(texto)) return;
 
-  /* ignorar multimedia */
   if (
     msg.message?.imageMessage ||
     msg.message?.videoMessage ||
@@ -63,54 +83,13 @@ export async function procesarReserva(sock, msg, texto, configGrupo) {
   if (numeros.length === 0) return;
 
   const { tabla, nombre: nombreGrupo } = configGrupo;
-
   const grupoId = msg.key.remoteJid;
-  const jidUsuario = msg.key.participant || msg.key.remoteJid;
 
-  const { telefono, lid } = parsearJid(jidUsuario);
-
-  let telefonoFinal = telefono;
-  let lidFinal = lid;
-
-  /* si llega telefono buscar LID */
-  if (telefonoFinal) {
-
-    const { data, error } = await supabase
-      .from("usuarios")
-      .select("lid")
-      .eq("telefono", telefonoFinal)
-      .limit(1);
-
-    if (!error && data && data.length > 0) {
-      lidFinal = data[0].lid;
-    }
-
-  }
-
-  /* si llega LID buscar telefono */
-  if (!telefonoFinal && lidFinal) {
-
-    const { data, error } = await supabase
-      .from("usuarios")
-      .select("telefono")
-      .eq("lid", lidFinal)
-      .limit(1);
-
-    if (!error && data && data.length > 0) {
-      telefonoFinal = data[0].telefono;
-    } else {
-
-      console.log("❌ Usuario no encontrado en tabla usuarios");
-      console.log("LID recibido:", lidFinal);
-
-      return;
-
-    }
-
-  }
+  // 🔥 USUARIO DESDE JID
+  const { telefonoFinal, lidFinal } = await obtenerUsuario(jidUsuario);
 
   if (!telefonoFinal) {
-    console.log("⚠️ No se pudo identificar teléfono");
+    console.log("⚠️ Usuario sin teléfono:", jidUsuario);
     return;
   }
 
@@ -176,7 +155,6 @@ export async function procesarReserva(sock, msg, texto, configGrupo) {
     if (updateData?.length === 1) {
       reservados.push(numero);
     }
-
   }
 
   if (ocupadosPorOtros.length === 0) {
@@ -214,7 +192,5 @@ export async function procesarReserva(sock, msg, texto, configGrupo) {
 📍 Grupo: ${nombreGrupo}
 🔢 Números: ${reservados.join(", ")}`
     });
-
   }
-
 }
