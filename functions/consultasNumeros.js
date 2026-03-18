@@ -125,7 +125,7 @@ function frasesPagadasSinSaludo(lista) {
   return [
     `Ya tienes el *${lista}* pagos ✅`,
     `Tus números *${lista}* están confirmados 💰`,
-    `El *${lista}* ya está pago 🔥`,
+    `El *${lista}* ya están candelados 🔥`,
     `Todo listo, *${lista}* confirmado 🎯`
   ];
 }
@@ -167,8 +167,8 @@ export function respuestaSinNumeros(textoUsuario = "") {
 
   const conSaludoRespuestas = [
     `${saludoHora}\n\nAún no tienes números registrados 😅`,
-    `${saludoHora}\n\nTodavía no has apartado números`,
-    `${saludoHora}\n\nNo veo jugadas tuyas aún 👀`
+    `${saludoHora}\n\nTodavía no has apartado números para esta dinamica ❌👀`,
+    `${saludoHora}\n\nTodavía no has apartado números 👀`
   ];
 
   const sinSaludoRespuestas = [
