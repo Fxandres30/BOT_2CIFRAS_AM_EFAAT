@@ -4,19 +4,20 @@ import { supabase } from "./supabase.js";
 
 console.log("🔥 VERSION NUEVA PAGOS ACTIVADA");
 
-// 🔥 LIMPIAR NÚMERO
-const limpiarNumero = (jid = "") => {
-  if (!jid) return "";
-  return jid.split("@")[0].replace(/\D/g, "");
-};
-
-// 🧠 Normalizar JID
+// 🧠 NORMALIZAR JID (🔥 CLAVE)
 function decodeJid(jid = "") {
+  if (!jid) return jid;
+
+  // 👉 convertir @lid → @s.whatsapp.net
+  if (jid.endsWith("@lid")) {
+    return jid.split("@")[0] + "@s.whatsapp.net";
+  }
+
   const r = jidDecode(jid);
   return r?.user ? r.user + "@s.whatsapp.net" : jid;
 }
 
-// 🔎 detectar telefono o LID
+// 🔎 detectar telefono o LID (esto sí lo dejamos)
 function parsearJid(jid = "") {
 
   if (jid.includes("@lid")) {
@@ -38,7 +39,7 @@ function parsearJid(jid = "") {
   return { telefono: null, lid: null };
 }
 
-export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
+export async function procesarPago(sock, msg, configGrupo) {
 
   console.log("\n💰 procesarPago ACTIVADO");
 
@@ -51,26 +52,18 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   console.log("🧩 Sticker ID:", stickerID);
 
-  // 🔥 REMITENTE REAL (FIX FINAL)
-  const remitenteRaw = decodeJid(
-    msg.key.participantPn || // 🔥 CLAVE
+  // 🔥 REMITENTE (SIN LIMPIAR)
+  const remitente = decodeJid(
     msg.key.participant ||
     msg.participant ||
     msg.key.remoteJid ||
     ""
   );
 
-  const numeroRemitente = limpiarNumero(remitenteRaw);
+  console.log("👤 Remitente:", remitente);
 
-  console.log("👤 Remitente RAW:", remitenteRaw);
-  console.log("📌 Número remitente:", numeroRemitente);
-
-  // 🔥 VALIDAR ADMIN
-  const esAdmin = ADMINS.some(
-    (admin) => limpiarNumero(admin.trim()) === numeroRemitente
-  );
-
-  if (!esAdmin) {
+  // ✅ VALIDACIÓN DIRECTA
+  if (!ADMINS.includes(remitente)) {
     console.log("⛔ No es admin");
     return;
   }
@@ -83,9 +76,8 @@ export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
     return;
   }
 
-  // 🔥 CLIENTE REAL (FIX FINAL)
+  // 🔥 CLIENTE (MISMA LÓGICA)
   const clienteRaw =
-    sticker.contextInfo?.participantPn || // 🔥 CLAVE
     sticker.contextInfo?.participant ||
     sticker.contextInfo?.remoteJid ||
     "";
