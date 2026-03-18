@@ -16,7 +16,7 @@ export const GRUPOS_PERMITIDOS = {
   },
   
   "120363425078329823@g.us": {
-    nombre: "Grupo PRUEVA 1",
+    nombre: "Grupo PRUEVA",
     tabla:  "reservas_dos_cifras" // 👈 NOMBRE REAL
   }
 };
