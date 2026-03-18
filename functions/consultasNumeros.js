@@ -97,7 +97,7 @@ function frasesConSaludo(saludo, lista) {
   return [
     `*${saludo}*\n\nTienes el *${lista}* reservado ✅`,
     `*${saludo}*\n\nLlevas el *${lista}* apartado 🔥`,
-    `*${saludo}*\n\nVas con el *${lista}* confirmado 🎯`,
+    `*${saludo}*\n\nVa con el *${lista}* confirmado 🎯`,
     `*${saludo}*\n\nTienes el *${lista}* asegurado 👀`
   ];
 }
@@ -172,9 +172,8 @@ export function respuestaSinNumeros(textoUsuario = "") {
   ];
 
   const sinSaludoRespuestas = [
-    "Aún no tienes números registrados 😅",
-    "No veo jugadas tuyas todavía ❌",
-    "Todavía no has apartado números 👀"
+    "*Aún no tienes números registrados ❌😅*",
+    "*Todavía no has apartado números 👀❌*"
   ];
 
   const respuestas = conSaludo
