@@ -105,7 +105,7 @@ function frasesConSaludo(saludo, lista) {
 function frasesSinSaludo(lista) {
   return [
     `Tiene el *${lista}* reservado ✅`,
-    `Vas con *${lista}* hasta el momento 🔥`,
+    `Va con el numero *${lista}* hasta el momento 🔥`,
     `Listo, Por ahora llevas el *${lista}* reservados  ✅`,
     `Tus números apartados son : *${lista}* 🎯`
   ];
