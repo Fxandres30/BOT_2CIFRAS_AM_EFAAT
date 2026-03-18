@@ -10,25 +10,33 @@ import {
 
 import { obtenerNumerosUsuario } from "./consultarNumerosBD.js";
 
+// 🔥 LIMPIAR NÚMERO (NUEVO)
+const limpiarNumero = (jid = "") => {
+  if (!jid) return "";
+  return jid.split("@")[0].replace(/\D/g, "");
+};
+
+// 🔥 SACAR JID REAL (ANTI BUG WHATSAPP)
+const obtenerJidUsuario = (msg) => {
+  return (
+    msg.key.participant ||
+    msg.participant ||
+    msg.key.remoteJid ||
+    ""
+  );
+};
+
 // 🔥 FUNCIÓN NUEVA (NO BORRA NADA)
 async function enviarConEscribiendo(sock, jid, texto, quoted) {
-
   try {
-    // 👀 marcar como leído (opcional pero PRO)
     await sock.readMessages([quoted.key]);
-
-    // 🟢 escribiendo...
     await sock.sendPresenceUpdate("composing", jid);
 
-    // ⏳ delay humano (4 a 7 segundos)
     const tiempo = Math.floor(Math.random() * 3000) + 4000;
-
     await new Promise(resolve => setTimeout(resolve, tiempo));
 
-    // 💬 enviar mensaje
     await sock.sendMessage(jid, { text: texto }, { quoted });
 
-    // 🔵 dejar de escribir
     await sock.sendPresenceUpdate("paused", jid);
 
   } catch (err) {
@@ -46,10 +54,18 @@ export async function procesarEntrada(sock, msg, configGrupo) {
   const tipo = getContentType(msg.message);
   console.log("📦 Tipo de mensaje:", tipo);
 
+  // 🔥 USUARIO LIMPIO (NUEVO)
+  const jidUsuarioRaw = obtenerJidUsuario(msg);
+  const numeroUsuario = limpiarNumero(jidUsuarioRaw);
+
+  console.log("📌 JID RAW:", jidUsuarioRaw);
+  console.log("📌 NÚMERO LIMPIO:", numeroUsuario);
+
   // 🧩 STICKER → PAGO
   if (tipo === "stickerMessage") {
     console.log("🧩 STICKER → pagos");
-    await procesarPago(sock, msg, configGrupo);
+
+    await procesarPago(sock, msg, configGrupo, numeroUsuario); // 👈 LE PASAMOS EL LIMPIO
     return;
   }
 
@@ -93,12 +109,10 @@ export async function procesarEntrada(sock, msg, configGrupo) {
   // 🔥 CONSULTA DE NÚMEROS
   if (esConsultaNumeros(texto)) {
 
-    const jidUsuario = msg.key.participant || msg.key.remoteJid;
-
     try {
 
       const numeros = await obtenerNumerosUsuario(
-        jidUsuario,
+        numeroUsuario, // 👈 SIEMPRE LIMPIO
         configGrupo.tabla
       );
 
@@ -142,6 +156,6 @@ export async function procesarEntrada(sock, msg, configGrupo) {
     return;
   }
 
-  // 👉 RESERVAS (flujo normal)
-  await procesarReserva(sock, msg, texto, configGrupo);
+  // 👉 RESERVAS
+  await procesarReserva(sock, msg, texto, configGrupo, numeroUsuario); // 👈 TAMBIÉN LIMPIO
 }

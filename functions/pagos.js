@@ -2,6 +2,12 @@ import { ADMINS, STICKER_PAGO_ID, NUMERO_NOTIFICACION } from "./config.js";
 import { jidDecode } from "@whiskeysockets/baileys";
 import { supabase } from "./supabase.js";
 
+// 🔥 LIMPIAR NÚMERO (NUEVO)
+const limpiarNumero = (jid = "") => {
+  if (!jid) return "";
+  return jid.split("@")[0].replace(/\D/g, "");
+};
+
 // 🧠 Normalizar JID
 function decodeJid(jid = "") {
   const r = jidDecode(jid);
@@ -24,7 +30,6 @@ function parsearJid(jid = "") {
       .replace("@s.whatsapp.net", "")
       .replace(/^57/, "");
 
-    // teléfono real
     if (numero.length <= 12) {
       return {
         telefono: numero,
@@ -32,7 +37,6 @@ function parsearJid(jid = "") {
       };
     }
 
-    // ID largo → convertir a LID
     return {
       telefono: null,
       lid: numero + "@lid"
@@ -42,7 +46,7 @@ function parsearJid(jid = "") {
   return { telefono: null, lid: null };
 }
 
-export async function procesarPago(sock, msg, configGrupo) {
+export async function procesarPago(sock, msg, configGrupo, numeroUsuario) {
 
   console.log("\n💰 procesarPago ACTIVADO");
 
@@ -55,16 +59,30 @@ export async function procesarPago(sock, msg, configGrupo) {
 
   console.log("🧩 Sticker ID:", stickerID);
 
-  const remitente = decodeJid(
-    msg.key.participant || msg.key.remoteJid
+  // 🔥 REMITENTE LIMPIO (CLAVE)
+  const remitenteRaw = decodeJid(
+    msg.key.participant ||
+    msg.participant ||
+    msg.key.remoteJid ||
+    ""
   );
 
-  console.log("👤 Remitente:", remitente);
+  const numeroRemitente = limpiarNumero(remitenteRaw);
 
-  if (!ADMINS.includes(remitente)) {
+  console.log("👤 Remitente RAW:", remitenteRaw);
+  console.log("📌 Número remitente:", numeroRemitente);
+
+  // 🔥 VALIDACIÓN ADMIN CORRECTA
+  const esAdmin = ADMINS.some(
+    (admin) => limpiarNumero(admin) === numeroRemitente
+  );
+
+  if (!esAdmin) {
     console.log("⛔ No es admin");
     return;
   }
+
+  console.log("✅ ES ADMIN");
 
   if (stickerID !== STICKER_PAGO_ID) {
     console.log("⛔ Sticker no válido");
@@ -86,7 +104,7 @@ export async function procesarPago(sock, msg, configGrupo) {
   let telefonoFinal = telefono;
   let lidFinal = lid;
 
-  // si llega telefono buscar lid
+  // 🔍 buscar lid si hay teléfono
   if (telefonoFinal) {
 
     const { data } = await supabase
@@ -98,10 +116,9 @@ export async function procesarPago(sock, msg, configGrupo) {
     if (data?.length) {
       lidFinal = data[0].lid;
     }
-
   }
 
-  // si llega lid buscar telefono
+  // 🔍 buscar teléfono si hay lid
   if (!telefonoFinal && lidFinal) {
 
     const { data } = await supabase
@@ -113,7 +130,6 @@ export async function procesarPago(sock, msg, configGrupo) {
     if (data?.length) {
       telefonoFinal = data[0].telefono;
     }
-
   }
 
   if (!telefonoFinal) {
@@ -159,13 +175,11 @@ export async function procesarPago(sock, msg, configGrupo) {
   console.log("✅ Pago marcado correctamente");
 
   const mensaje = `
-
 ✅ *PAGO CONFIRMADO*
 
 👤 Cliente: *${comprador}*
 📍 Grupo: ${configGrupo.nombre}
 🔢 Números: *( ${numeros.join(" - ")} )*
-
 `;
 
   await sock.sendMessage(NUMERO_NOTIFICACION, { text: mensaje });
