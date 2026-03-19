@@ -1,11 +1,15 @@
 import { supabase } from "./supabase.js";
 import { NUMERO_ADMIN } from "./config.js";
 import { textoPermitidoParaReserva } from "./reglasReserva.js";
+
 import {
   mensajesTodosLibres,
   mensajesTodosOcupados,
-  mensajeAleatorio
+  mensajeAleatorio,
+  encabezadosReservados,
+  encabezadosOcupados
 } from "./mensajes.js";
+
 import { delayEscritura } from "./typing.js";
 
 /* extraer números */
@@ -171,12 +175,16 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
     let respuesta = "";
 
     if (reservados.length > 0) {
-      respuesta += `✅ Números reservados: *( ${reservados.join(" - ")} )*\n`;
-    }
+  const plantilla = mensajeAleatorio(encabezadosReservados);
+  const texto = plantilla.replace("{numeros}", reservados.join(" - "));
+  respuesta += `${texto}\n\n`;
+}
 
-    if (ocupadosPorOtros.length > 0) {
-      respuesta += `❌ No disponibles: *( ${ocupadosPorOtros.join(" - ")} )*`;
-    }
+if (ocupadosPorOtros.length > 0) {
+  const plantilla = mensajeAleatorio(encabezadosOcupados);
+  const texto = plantilla.replace("{numeros}", ocupadosPorOtros.join(" - "));
+  respuesta += texto;
+}
 
     await responder(sock, grupoId, respuesta, msg);
   }
