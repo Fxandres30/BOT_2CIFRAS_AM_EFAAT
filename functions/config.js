@@ -6,8 +6,12 @@ export const ADMINS = [
 
 export const NUMERO_ADMIN = "573014123951@s.whatsapp.net";
 
-export const STICKER_PAGO_ID =
-  "lQxamakRbsf6VaG30rTCo+Dmpw925rugJ6695kDydbQ=";
+export const STICKER_PAGO_ID =  [
+  "lQxamakRbsf6VaG30rTCo+Dmpw925rugJ6695kDydbQ=",
+  "T9gVHBVeWDiTlhsDL0tr3Xjbu0bUzAlP1VjSHjf5rKg=",
+  "Ztbr/xggfN4hQot5ZA1Fl24SwoLW7Woz74EACZMoUSQ=",
+  "nnq3+j4zrFsOybkKlyU1oVL/UAN0CRiLJ7K4AG9Uftk="
+  ];
 
 export const NUMERO_NOTIFICACION = [
   "573014123951@s.whatsapp.net",

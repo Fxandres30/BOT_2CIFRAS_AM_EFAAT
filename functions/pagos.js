@@ -73,11 +73,11 @@ export async function procesarPago(sock, msg, configGrupo, jidUsuario) {
 
   console.log("✅ ES ADMIN");
 
-  // 🔒 validar sticker
-  if (stickerID !== STICKER_PAGO_ID) {
-    console.log("⛔ Sticker no válido");
-    return;
-  }
+// 🔒 validar sticker
+if (!STICKER_PAGO_ID.includes(stickerID)) {
+  console.log("⛔ Sticker no válido");
+  return;
+}
 
   // 🔥 CLIENTE
   const clienteJid =
