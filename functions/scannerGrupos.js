@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 import { NUMERO_NOTIFICACION } from "./config.js"; // 🔥 IMPORTANTE
+import { horaColombia, fechaColombia } from "./tiempoColombia.js";
 
 const obtenerNumero = (jid = "") => jid.split("@")[0];
 
@@ -114,14 +115,14 @@ export async function escanearGrupos(sock) {
     const mensaje = `
 📊 *ESCÁNER COMPLETADO*
 
-📁 Grupos: ${totalGrupos}
-👥 Escaneados: ${totalUsuarios}
-🆕 Nuevos: ${nuevos}
-🔄 Actualizados: ${actualizados}
+*📁 Grupos:* ${totalGrupos}
+*👥 Escaneados:* ${totalUsuarios}
+*🆕 Nuevos:* ${nuevos}
+*🔄 Actualizados:* ${actualizados}
 
 📦 *TOTAL EN BD:* ${count}
 
-⏰ ${new Date().toLocaleString()}
+⏰ ${fechaColombia()} ${horaColombia()}
 `;
 
     // 🔥 ENVIAR A TODOS

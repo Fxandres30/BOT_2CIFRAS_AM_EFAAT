@@ -12,12 +12,13 @@ import makeWASocket, {
 import qrcode from "qrcode-terminal";
 import { Boom } from "@hapi/boom";
 
+import { horaColombia } from "./functions/tiempoColombia.js";
 import { encolarMensaje } from "./functions/colaGrupos.js";
 import { procesarEntrada } from "./functions/entrada.js";
 import { GRUPOS_PERMITIDOS } from "./functions/grupos.js";
 import { escanearGrupos } from "./functions/scannerGrupos.js";
 
-console.log("🚀 BOT INICIANDO...");
+console.log("🚀 BOT - 1.0 - INICIANDO...");
 
 let sock;
 let starting = false;
