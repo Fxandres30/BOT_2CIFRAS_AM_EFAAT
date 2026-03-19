@@ -1,5 +1,5 @@
 import { supabase } from "./supabase.js";
-import { NUMERO_NOTIFICACION } from "./config.js"; // 🔥 IMPORTANTE
+import { NUMERO_NOTIFICACION } from "./config.js";
 import { horaColombia, fechaColombia } from "./tiempoColombia.js";
 
 const obtenerNumero = (jid = "") => jid.split("@")[0];
@@ -106,10 +106,23 @@ export async function escanearGrupos(sock) {
     console.log("🔄 Actualizados:", actualizados);
     console.log("✅ ESCANEO COMPLETADO\n");
 
-    // 🔥 CONTAR TOTAL EN BD
+    // 🔥 TOTAL EN BD
     const { count } = await supabase
       .from("usuarios")
       .select("*", { count: "exact", head: true });
+
+    // 🔥 CON TELÉFONO (no null ni vacío)
+    const { count: conTelefono } = await supabase
+      .from("usuarios")
+      .select("*", { count: "exact", head: true })
+      .not("telefono", "is", null)
+      .neq("telefono", "");
+
+    // 🔥 SIN TELÉFONO
+    const { count: sinTelefono } = await supabase
+      .from("usuarios")
+      .select("*", { count: "exact", head: true })
+      .or("telefono.is.null,telefono.eq.");
 
     // 🔥 MENSAJE FINAL
     const mensaje = `
@@ -121,6 +134,8 @@ export async function escanearGrupos(sock) {
 *🔄 Actualizados:* ${actualizados}
 
 📦 *TOTAL EN BD:* ${count}
+📱 *Con teléfono:* ${conTelefono}
+❌ *Sin teléfono:* ${sinTelefono}
 
 ⏰ ${fechaColombia()} ${horaColombia()}
 `;
