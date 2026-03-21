@@ -1,6 +1,7 @@
 // functions/consultasNumeros.js
 
 import { textoPermitidoParaConsulta } from "./filtroConsultas.js";
+import { ahoraColombia } from "./tiempoColombia.js";
 
 // 🔹 LIMPIAR TEXTO
 function limpiarTexto(texto = "") {
@@ -81,7 +82,7 @@ function tieneSaludo(texto = "") {
 
 // 🔹 SALUDO POR HORA
 function obtenerSaludoPorHora() {
-  const hora = new Date().getHours();
+  const hora = ahoraColombia().getHours();
 
   const maniana = [
     "Buen día ☀️",
