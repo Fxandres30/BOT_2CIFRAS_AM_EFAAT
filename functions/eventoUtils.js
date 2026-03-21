@@ -2,14 +2,14 @@
 
 import { NUMERO_NOTIFICACION } from "./config.js";
 import { supabase } from "./supabase.js";
-import { horaColombia } from "./tiempoColombia.js";
+import { ahoraColombia, horaColombia } from "./tiempoColombia.js";
 
 
 // 🔥 CALCULAR CIERRE (5 min antes)
 export function calcularCierre(horaFin) {
   const [h, m] = horaFin.split(":").map(Number);
 
-  const fecha = new Date();
+  const fecha = ahoraColombia(); // 🔥 usamos Colombia
   fecha.setHours(h, m, 0, 0);
 
   const cierre = new Date(fecha.getTime() - (5 * 60 * 1000));
@@ -38,7 +38,7 @@ export async function cerrarGrupo(sock, grupoId) {
       .from("eventos_bot")
       .update({ estado: "cerrado" })
       .eq("grupo_id", grupoId)
-      .eq("estado", "abierto"); // 🔥 evita cerrar eventos viejos otra vez
+      .eq("estado", "abierto");
 
     console.log("🔴 Grupo cerrado + BD actualizada");
 
@@ -48,19 +48,22 @@ export async function cerrarGrupo(sock, grupoId) {
 }
 
 
-// ⏳ PROGRAMAR CIERRE (rápido pero no confiable solo)
+// ⏳ PROGRAMAR CIERRE (AHORA CORRECTO 🔥)
 export function programarCierre(sock, grupoId, horaFin) {
 
-  const ahora = new Date();
+  const ahora = ahoraColombia(); // 🔥 CLAVE
 
   const [h, m] = horaFin.split(":").map(Number);
 
-  const evento = new Date();
+  const evento = ahoraColombia(); // mismo día Colombia
   evento.setHours(h, m, 0, 0);
 
   const cierre = new Date(evento.getTime() - (5 * 60 * 1000));
 
   const delay = cierre.getTime() - ahora.getTime();
+
+  console.log("🕐 Ahora CO:", ahora.toLocaleTimeString());
+  console.log("🕐 Cierre CO:", cierre.toLocaleTimeString());
 
   if (delay <= 0) {
     console.log("⚠️ Ya debía cerrar → cerrando ahora");
@@ -74,15 +77,11 @@ export function programarCierre(sock, grupoId, horaFin) {
 }
 
 
-// 🔁 VERIFICAR CIERRES (ANTI-FALLOS 🔥)
+// 🔁 VERIFICAR CIERRES (YA ESTABA BIEN, SOLO AJUSTE 🔥)
 export async function verificarCierres(sock) {
   try {
 
-    const ahoraStr = horaColombia();
-    const [ah, am] = ahoraStr.split(":").map(Number);
-
-    const ahora = new Date();
-    ahora.setHours(ah, am, 0, 0);
+    const ahora = ahoraColombia(); // 🔥 directo, sin strings
 
     const { data: eventos, error } = await supabase
       .from("eventos_bot")
@@ -100,10 +99,9 @@ export async function verificarCierres(sock) {
 
       const [h, m] = ev.hora_cierre.split(":").map(Number);
 
-      const cierre = new Date();
+      const cierre = ahoraColombia();
       cierre.setHours(h, m, 0, 0);
 
-      // 🔥 SI YA PASÓ → CERRAR
       if (ahora >= cierre) {
         console.log(`⏰ Cerrando automático grupo: ${ev.grupo_id}`);
         await cerrarGrupo(sock, ev.grupo_id);
@@ -114,6 +112,7 @@ export async function verificarCierres(sock) {
     console.log("❌ Error en verificación:", err.message);
   }
 }
+
 
 // 🔍 EXTRAER EVENTO
 export function extraerEventos(texto) {
@@ -169,7 +168,6 @@ export function extraerEventos(texto) {
       .filter(l => l.match(/\$\s?[\d\.]+/))
       .map(l => l.replace(/\*/g, "").trim());
 
-    // 🔥 NUEVO NOMBRE INTELIGENTE
     const nombre = bloque
       .split("\n")[0]
       .replace(/\*/g, "")
@@ -187,6 +185,7 @@ export function extraerEventos(texto) {
 
   return null;
 }
+
 
 // 🔢 VALIDAR NÚMEROS
 export function obtenerNumerosValidos() {
