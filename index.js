@@ -18,6 +18,9 @@ import { procesarEntrada } from "./functions/entrada.js";
 import { GRUPOS_PERMITIDOS } from "./functions/grupos.js";
 import { escanearGrupos } from "./functions/scannerGrupos.js";
 
+// 🔥 IMPORTANTE
+import { verificarEventosPendientes } from "./functions/detectarEvento.js";
+
 console.log("🚀 BOT - 1.0.1 - INICIANDO...");
 
 let sock;
@@ -51,7 +54,8 @@ async function startBot() {
 
     sock.ev.on("creds.update", saveCreds);
 
-    sock.ev.on("connection.update", (update) => {
+    // 🔥 IMPORTANTE: async
+    sock.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
@@ -60,18 +64,25 @@ async function startBot() {
       }
 
       if (connection === "open") {
-  console.log("✅ CONECTADO A WHATSAPP");
+        console.log("✅ CONECTADO A WHATSAPP");
 
-  // 🔥 ejecutar escáner al iniciar
-  escanearGrupos(sock);
+        try {
+          // 🔥 VERIFICAR EVENTOS PENDIENTES (CLAVE)
+          await verificarEventosPendientes(sock);
+        } catch (err) {
+          console.log("❌ Error verificando eventos:", err?.message);
+        }
 
-  // 🔥 ejecutar cada 1 minuto (PRUEBA)
-  setInterval(() => {
-    escanearGrupos(sock);
-  }, 1000 * 60 * 60 * 6);
+        // 🔥 ejecutar escáner al iniciar
+        escanearGrupos(sock);
 
-  starting = false;
-}
+        // 🔥 ejecutar cada 6 horas
+        setInterval(() => {
+          escanearGrupos(sock);
+        }, 1000 * 60 * 60 * 6);
+
+        starting = false;
+      }
 
       if (connection === "close") {
         const statusCode =
@@ -87,7 +98,7 @@ async function startBot() {
       }
     });
 
-    // 📩 ÚNICO LISTENER (🔥 IMPORTANTE)
+    // 📩 ÚNICO LISTENER
     sock.ev.on("messages.upsert", ({ messages, type }) => {
       if (type !== "notify") return;
 
@@ -100,7 +111,6 @@ async function startBot() {
 
         if (!GRUPOS_PERMITIDOS[grupoId]) continue;
 
-        // 🔥 USUARIO REAL
         const jidUsuario = obtenerJidUsuario(msg);
 
         if (!jidUsuario) {
@@ -113,13 +123,12 @@ async function startBot() {
         console.log("➡️ Usuario:", jidUsuario);
         console.log("----------------------------");
 
-        // 🔥 TODO pasa por entrada
         encolarMensaje(grupoId, async () => {
           await procesarEntrada(
             sock,
             msg,
             GRUPOS_PERMITIDOS[grupoId],
-            jidUsuario // 👈 CLAVE
+            jidUsuario
           );
         });
       }

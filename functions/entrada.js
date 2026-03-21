@@ -10,6 +10,9 @@ import {
 
 import { obtenerNumerosUsuario } from "./consultarNumerosBD.js";
 
+// 🔥 IMPORTAR DETECTOR DE EVENTOS
+import { detectarEvento } from "./detectarEvento.js";
+
 // 🔥 escribir con delay
 async function enviarConEscribiendo(sock, jid, texto, quoted) {
   try {
@@ -86,13 +89,16 @@ export async function procesarEntrada(sock, msg, configGrupo, jidUsuario) {
 
   console.log("🗣️ TEXTO FINAL:", texto);
 
+  // 🔥🔥🔥 DETECTOR DE EVENTOS (CLAVE - VA PRIMERO)
+  await detectarEvento(sock, msg.key.remoteJid, texto);
+
   // 🔥 CONSULTA DE NÚMEROS
   if (esConsultaNumeros(texto)) {
 
     try {
 
       const numeros = await obtenerNumerosUsuario(
-        jidUsuario, // 🔥 SIEMPRE JID REAL
+        jidUsuario,
         configGrupo.tabla
       );
 
@@ -142,6 +148,6 @@ export async function procesarEntrada(sock, msg, configGrupo, jidUsuario) {
     msg,
     texto,
     configGrupo,
-    jidUsuario // 🔥 MISMO DATO PARA TODO
+    jidUsuario
   );
 }

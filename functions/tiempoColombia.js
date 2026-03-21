@@ -12,18 +12,20 @@ export function fechaColombia() {
   return ahoraColombia().toLocaleDateString("es-CO");
 }
 
+// 🔥 HORA LIMPIA (CLAVE)
 export function horaColombia() {
-  return ahoraColombia().toLocaleTimeString("es-CO", {
+  return ahoraColombia().toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
-  });
+    hour12: false,
+  }); // 👉 "20:24"
 }
 
 export function timestampColombia() {
   return ahoraColombia().getTime();
 }
 
+// 🔥 VALIDACIÓN CORRECTA
 export function yaPasoHora(horaLimite) {
   const ahora = ahoraColombia();
 

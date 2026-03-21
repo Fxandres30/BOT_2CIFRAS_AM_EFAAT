@@ -1,6 +1,6 @@
 // functions/consultasNumeros.js
 
-import { textoPermitidoParaReserva } from "./reglasReserva.js";
+import { textoPermitidoParaConsulta } from "./filtroConsultas.js";
 
 // 🔹 LIMPIAR TEXTO
 function limpiarTexto(texto = "") {
@@ -11,7 +11,7 @@ function limpiarTexto(texto = "") {
     .trim();
 }
 
-// 🔥 DETECCIÓN INTELIGENTE (FULL PRO)
+// 🔥 DETECCIÓN INTELIGENTE (PRO)
 export function esConsultaNumeros(texto = "") {
 
   if (!texto) return false;
@@ -22,29 +22,45 @@ export function esConsultaNumeros(texto = "") {
     return false;
   }
 
-  // 🚫 FILTRO 2: PALABRAS PROHIBIDAS
-  if (!textoPermitidoParaReserva(texto)) {
-    console.log("🚫 Bloqueado por palabras prohibidas");
+  const t = limpiarTexto(texto);
+
+  // 🚫 BLOQUEAR CONSULTAS DE DISPONIBILIDAD (CLAVE 🔥)
+  const esDisponibilidad =
+    /\b(quedan|queda|hay|disponible|disponibles)\b/.test(t);
+
+  if (esDisponibilidad) {
+    console.log("🚫 Consulta de disponibilidad, ignorada");
     return false;
   }
 
-  const t = limpiarTexto(texto);
+  // 🚫 FILTRO 2 (DESPUÉS DE LIMPIAR)
+  if (!textoPermitidoParaConsulta(texto)) {
+  console.log("🚫 Bloqueado en filtro de consulta");
+  return false;
+}
 
-  // 🧠 INTENCIÓN REAL
+  // 🧠 INTENCIÓN REAL (MEJORADA 🔥)
   const tieneIntencion =
     t.includes("debo") ||
     t.includes("tengo") ||
     t.includes("mis numeros") ||
-    t.includes("mis números") ||
+    t.includes("mis numero") ||
     t.includes("que tengo") ||
-    t.includes("cuales son mis numeros");
+    t.includes("cuales son mis numeros") ||
+    t.includes("numeros mios") ||
+    t.includes("mis num") ||
+    t.includes("mis nums") ||
+    t.includes("numeros tengo");
 
-  // ⚡ CASOS CORTOS
+  // ⚡ CASOS CORTOS (MEJORADOS)
   const casosCortos =
     t.includes("q tengo") ||
     t.includes("k tengo") ||
     t.includes("q debo") ||
-    t.includes("k debo");
+    t.includes("k debo") ||
+    t === "tengo" ||
+    t === "debo" ||
+    t === "mis numeros";
 
   return tieneIntencion || casosCortos;
 }
@@ -139,7 +155,9 @@ export function respuestaAleatoriaNumeros(
 
   if (!textoUsuario) return null;
 
-  const lista = `( ${numeros.join(" - ")} )`;
+  const lista = numeros.length
+    ? `( ${numeros.join(" - ")} )`
+    : "ninguno";
 
   const conSaludo = tieneSaludo(textoUsuario);
   const saludoHora = obtenerSaludoPorHora();
@@ -168,11 +186,11 @@ export function respuestaSinNumeros(textoUsuario = "") {
   const conSaludoRespuestas = [
     `${saludoHora}\n\nAún no tienes números registrados 😅`,
     `${saludoHora}\n\nTodavía no has apartado números para esta dinamica ❌👀`,
-    `${saludoHora}\n\nTodavía no has apartado números 👀`
+    `${saludoHora}\n\nTodavía no tiene numeros apartado 🚫👀`
   ];
 
   const sinSaludoRespuestas = [
-    "*Aún no tienes números registrados ❌😅*",
+    "*Aún no tiene números registrados ❌😅*",
     "*Todavía no has apartado números 👀❌*"
   ];
 
