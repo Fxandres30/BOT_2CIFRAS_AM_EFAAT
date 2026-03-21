@@ -32,20 +32,32 @@ export async function detectarEvento(sock, grupoId, texto) {
 
   if (data.length > 0) {
 
-    const evDB = data[0];
+  const evDB = data[0];
 
-    if (ahora >= evDB.hora_cierre && evDB.estado !== "cerrado") {
-      console.log("⚠️ Evento anterior vencido → cerrando");
-      await cerrarGrupo(sock, grupoId);
-    }
-
-    await supabase
-      .from("eventos_bot")
-      .delete()
-      .eq("grupo_id", grupoId);
-
-    console.log("♻️ Evento anterior eliminado");
+  // 🔴 SI YA VENCIÓ → cerrar
+  if (ahora >= evDB.hora_cierre && evDB.estado !== "cerrado") {
+    console.log("⚠️ Evento anterior vencido → cerrando");
+    await cerrarGrupo(sock, grupoId);
   }
+
+  // 🧠 SI ES EL MISMO EVENTO → NO HACER NADA
+  if (
+    evDB.hora_fin === ev.hora &&
+    evDB.hora_cierre === ev.horaCierre &&
+    evDB.estado === "abierto"
+  ) {
+    console.log("⚖️ Evento repetido → ignorado");
+    return; // 🔥 ESTO ES LO IMPORTANTE
+  }
+
+  // 🧹 SOLO SI ES DIFERENTE
+  await supabase
+    .from("eventos_bot")
+    .delete()
+    .eq("grupo_id", grupoId);
+
+  console.log("♻️ Evento anterior eliminado (nuevo detectado)");
+}
 
   const { error } = await supabase
     .from("eventos_bot")
