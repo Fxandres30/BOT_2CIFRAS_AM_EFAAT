@@ -21,7 +21,7 @@ import { escanearGrupos } from "./functions/scannerGrupos.js";
 // 🔥 IMPORTANTE
 import { verificarEventosPendientes } from "./functions/detectarEvento.js";
 
-console.log("🚀 BOT - 1.0.1 - INICIANDO...");
+console.log("🚀 BOT - 1.0.2 - EFAAT - INICIANDO...");
 
 let sock;
 let starting = false;
