@@ -65,6 +65,8 @@ async function startBot() {
       }
 
       if (connection === "open") {
+         // 🔥 MENSAJE AUTOMÁTICO DE REGLAS
+iniciarMensajesProgramados(sock);
         console.log("✅ CONECTADO A WHATSAPP");
         console.log("🕐 Hora Colombia:", horaColombia());
 
