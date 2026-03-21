@@ -17,14 +17,16 @@ import { encolarMensaje } from "./functions/colaGrupos.js";
 import { procesarEntrada } from "./functions/entrada.js";
 import { GRUPOS_PERMITIDOS } from "./functions/grupos.js";
 import { escanearGrupos } from "./functions/scannerGrupos.js";
-
-// 🔥 IMPORTANTE
-import { verificarEventosPendientes } from "./functions/detectarEvento.js";
+import { verificarCierres } from "./functions/eventoUtils.js";
 
 console.log("🚀 BOT - 1.0.3 - EFAAT - INICIANDO...");
 
 let sock;
 let starting = false;
+
+// 🔥 CONTROL GLOBAL DE INTERVALOS
+let intervaloCierres = null;
+let intervaloScanner = null;
 
 // 🔥 FUNCIÓN CLAVE: OBTENER USUARIO REAL
 function obtenerJidUsuario(msg) {
@@ -54,7 +56,6 @@ async function startBot() {
 
     sock.ev.on("creds.update", saveCreds);
 
-    // 🔥 IMPORTANTE: async
     sock.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -65,21 +66,39 @@ async function startBot() {
 
       if (connection === "open") {
         console.log("✅ CONECTADO A WHATSAPP");
+        console.log("🕐 Hora Colombia:", horaColombia());
 
         try {
-          // 🔥 VERIFICAR EVENTOS PENDIENTES (CLAVE)
-          await verificarEventosPendientes(sock);
+          // 🔥 VERIFICAR CIERRES AL INICIAR
+          console.log("🔎 Verificando eventos pendientes...");
+          await verificarCierres(sock);
         } catch (err) {
-          console.log("❌ Error verificando eventos:", err?.message);
+          console.log("❌ Error verificando cierres:", err?.message);
         }
 
-        // 🔥 ejecutar escáner al iniciar
+        // 🔥 INTERVALO CIERRES (ANTI DUPLICADO)
+        if (!intervaloCierres) {
+          intervaloCierres = setInterval(async () => {
+            try {
+              console.log("⏱️ Verificación automática de cierres...");
+              await verificarCierres(sock);
+            } catch (err) {
+              console.log("❌ Error verificador:", err?.message);
+            }
+          }, 60000);
+        }
+
+        // 🔥 ESCÁNER INICIAL
+        console.log("📡 Ejecutando escáner inicial...");
         escanearGrupos(sock);
 
-        // 🔥 ejecutar cada 6 horas
-        setInterval(() => {
-          escanearGrupos(sock);
-        }, 1000 * 60 * 60 * 6);
+        // 🔥 INTERVALO ESCÁNER (ANTI DUPLICADO)
+        if (!intervaloScanner) {
+          intervaloScanner = setInterval(() => {
+            console.log("🔄 Escaneo automático de grupos...");
+            escanearGrupos(sock);
+          }, 1000 * 60 * 60 * 6);
+        }
 
         starting = false;
       }
@@ -87,6 +106,8 @@ async function startBot() {
       if (connection === "close") {
         const statusCode =
           new Boom(lastDisconnect?.error)?.output?.statusCode;
+
+        console.log("⚠️ Conexión cerrada. Código:", statusCode);
 
         if (statusCode === DisconnectReason.loggedOut) {
           console.log("🚫 Sesión cerrada. Borra auth_info_baileys");
@@ -98,7 +119,7 @@ async function startBot() {
       }
     });
 
-    // 📩 ÚNICO LISTENER
+    // 📩 MENSAJES
     sock.ev.on("messages.upsert", ({ messages, type }) => {
       if (type !== "notify") return;
 
@@ -109,7 +130,7 @@ async function startBot() {
         const grupoId = msg.key.remoteJid;
         if (!grupoId?.endsWith("@g.us")) continue;
 
-        if (!GRUPOS_PERMITIDOS[grupoId]) continue;
+        if (!GRUPOS_PERMITIDOS[grupoId]) return;
 
         const jidUsuario = obtenerJidUsuario(msg);
 
@@ -118,18 +139,26 @@ async function startBot() {
           continue;
         }
 
-        console.log("📌 MENSAJE EN GRUPO:");
-        console.log("➡️ ID:", grupoId);
-        console.log("➡️ Usuario:", jidUsuario);
-        console.log("----------------------------");
+        const nombreGrupo = GRUPOS_PERMITIDOS[grupoId]?.nombre || "Grupo";
+
+        console.log("\n━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log(`📍 GRUPO: ${nombreGrupo}`);
+        console.log(`🆔 ID: ${grupoId}`);
+        console.log(`👤 Usuario: ${jidUsuario}`);
+        console.log(`🕐 Hora: ${horaColombia()}`);
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━");
 
         encolarMensaje(grupoId, async () => {
-          await procesarEntrada(
-            sock,
-            msg,
-            GRUPOS_PERMITIDOS[grupoId],
-            jidUsuario
-          );
+          try {
+            await procesarEntrada(
+              sock,
+              msg,
+              GRUPOS_PERMITIDOS[grupoId],
+              jidUsuario
+            );
+          } catch (err) {
+            console.log(`❌ Error procesando mensaje en ${nombreGrupo}:`, err.message);
+          }
         });
       }
     });
