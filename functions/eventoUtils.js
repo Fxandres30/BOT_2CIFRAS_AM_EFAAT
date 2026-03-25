@@ -2,14 +2,14 @@
 
 import { NUMERO_NOTIFICACION } from "./config.js";
 import { supabase } from "./supabase.js";
-import { ahoraColombia, horaColombia } from "./tiempoColombia.js";
+import { ahoraColombia } from "./tiempoColombia.js";
 
 
 // 🔥 CALCULAR CIERRE (5 min antes)
 export function calcularCierre(horaFin) {
   const [h, m] = horaFin.split(":").map(Number);
 
-  const fecha = ahoraColombia(); // 🔥 usamos Colombia
+  const fecha = ahoraColombia();
   fecha.setHours(h, m, 0, 0);
 
   const cierre = new Date(fecha.getTime() - (5 * 60 * 1000));
@@ -23,13 +23,13 @@ export async function abrirGrupo(sock, grupoId) {
   try {
     await sock.groupSettingUpdate(grupoId, "not_announcement");
     console.log("🟢 Grupo abierto");
-  } catch {
-    console.log("❌ No admin (no abre)");
+  } catch (err) {
+    console.log("❌ No admin (no abre):", err?.message);
   }
 }
 
 
-// 🔒 CERRAR + BD
+// 🔒 CERRAR + BD (ANTI ERROR)
 export async function cerrarGrupo(sock, grupoId) {
   try {
     await sock.groupSettingUpdate(grupoId, "announcement");
@@ -42,20 +42,20 @@ export async function cerrarGrupo(sock, grupoId) {
 
     console.log("🔴 Grupo cerrado + BD actualizada");
 
-  } catch {
-    console.log("❌ No admin (no cierra)");
+  } catch (err) {
+    console.log("❌ No admin o error cerrando:", err?.message);
   }
 }
 
 
-// ⏳ PROGRAMAR CIERRE (AHORA CORRECTO 🔥)
+// ⏳ PROGRAMAR CIERRE (ROBUSTO 🔥)
 export function programarCierre(sock, grupoId, horaFin) {
 
-  const ahora = ahoraColombia(); // 🔥 CLAVE
+  const ahora = ahoraColombia();
 
   const [h, m] = horaFin.split(":").map(Number);
 
-  const evento = ahoraColombia(); // mismo día Colombia
+  const evento = ahoraColombia();
   evento.setHours(h, m, 0, 0);
 
   const cierre = new Date(evento.getTime() - (5 * 60 * 1000));
@@ -73,15 +73,22 @@ export function programarCierre(sock, grupoId, horaFin) {
 
   console.log("⏳ Cierre programado en ms:", delay);
 
-  setTimeout(() => cerrarGrupo(sock, grupoId), delay);
+  setTimeout(async () => {
+    try {
+      console.log("🔔 Ejecutando cierre programado:", grupoId);
+      await cerrarGrupo(sock, grupoId);
+    } catch (err) {
+      console.log("❌ Error en cierre programado:", err.message);
+    }
+  }, delay);
 }
 
 
-// 🔁 VERIFICAR CIERRES (YA ESTABA BIEN, SOLO AJUSTE 🔥)
+// 🔁 VERIFICAR CIERRES (ANTI FALLAS 🔥)
 export async function verificarCierres(sock) {
   try {
 
-    const ahora = ahoraColombia(); // 🔥 directo, sin strings
+    const ahora = ahoraColombia();
 
     const { data: eventos, error } = await supabase
       .from("eventos_bot")

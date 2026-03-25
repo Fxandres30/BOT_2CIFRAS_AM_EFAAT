@@ -19,16 +19,16 @@ import { GRUPOS_PERMITIDOS } from "./functions/grupos.js";
 import { escanearGrupos } from "./functions/scannerGrupos.js";
 import { verificarCierres } from "./functions/eventoUtils.js";
 
-console.log("🚀 BOT - 1.0.3 - EFAAT - INICIANDO...");
+console.log("🚀 BOT INICIANDO...");
 
 let sock;
 let starting = false;
 
-// 🔥 CONTROL GLOBAL DE INTERVALOS
+// 🔥 CONTROL DE INTERVALOS
 let intervaloCierres = null;
 let intervaloScanner = null;
 
-// 🔥 FUNCIÓN CLAVE: OBTENER USUARIO REAL
+// 🔥 OBTENER USUARIO
 function obtenerJidUsuario(msg) {
   return (
     msg.key.participant || 
@@ -65,24 +65,21 @@ async function startBot() {
       }
 
       if (connection === "open") {
-         // 🔥 MENSAJE AUTOMÁTICO DE REGLAS
-iniciarMensajesProgramados(sock);
-        console.log("✅ CONECTADO A WHATSAPP");
+        console.log("✅ CONECTADO");
         console.log("🕐 Hora Colombia:", horaColombia());
 
+        // 🔥 VERIFICAR AL INICIAR
         try {
-          // 🔥 VERIFICAR CIERRES AL INICIAR
-          console.log("🔎 Verificando eventos pendientes...");
+          console.log("🔎 Verificando cierres...");
           await verificarCierres(sock);
         } catch (err) {
-          console.log("❌ Error verificando cierres:", err?.message);
+          console.log("❌ Error verificando:", err?.message);
         }
 
-        // 🔥 INTERVALO CIERRES (ANTI DUPLICADO)
+        // 🔥 INTERVALO CIERRES (SOLO UNO)
         if (!intervaloCierres) {
           intervaloCierres = setInterval(async () => {
             try {
-              console.log("⏱️ Verificación automática de cierres...");
               await verificarCierres(sock);
             } catch (err) {
               console.log("❌ Error verificador:", err?.message);
@@ -91,13 +88,11 @@ iniciarMensajesProgramados(sock);
         }
 
         // 🔥 ESCÁNER INICIAL
-        console.log("📡 Ejecutando escáner inicial...");
         escanearGrupos(sock);
 
-        // 🔥 INTERVALO ESCÁNER (ANTI DUPLICADO)
+        // 🔥 INTERVALO ESCÁNER
         if (!intervaloScanner) {
           intervaloScanner = setInterval(() => {
-            console.log("🔄 Escaneo automático de grupos...");
             escanearGrupos(sock);
           }, 1000 * 60 * 60 * 6);
         }
@@ -109,7 +104,7 @@ iniciarMensajesProgramados(sock);
         const statusCode =
           new Boom(lastDisconnect?.error)?.output?.statusCode;
 
-        console.log("⚠️ Conexión cerrada. Código:", statusCode);
+        console.log("⚠️ Conexión cerrada:", statusCode);
 
         if (statusCode === DisconnectReason.loggedOut) {
           console.log("🚫 Sesión cerrada. Borra auth_info_baileys");
@@ -135,19 +130,14 @@ iniciarMensajesProgramados(sock);
         if (!GRUPOS_PERMITIDOS[grupoId]) return;
 
         const jidUsuario = obtenerJidUsuario(msg);
-
-        if (!jidUsuario) {
-          console.log("⚠️ No se pudo obtener usuario");
-          continue;
-        }
+        if (!jidUsuario) return;
 
         const nombreGrupo = GRUPOS_PERMITIDOS[grupoId]?.nombre || "Grupo";
 
         console.log("\n━━━━━━━━━━━━━━━━━━━━━━━");
-        console.log(`📍 GRUPO: ${nombreGrupo}`);
-        console.log(`🆔 ID: ${grupoId}`);
-        console.log(`👤 Usuario: ${jidUsuario}`);
-        console.log(`🕐 Hora: ${horaColombia()}`);
+        console.log(`📍 ${nombreGrupo}`);
+        console.log(`👤 ${jidUsuario}`);
+        console.log(`🕐 ${horaColombia()}`);
         console.log("━━━━━━━━━━━━━━━━━━━━━━━");
 
         encolarMensaje(grupoId, async () => {
@@ -159,7 +149,7 @@ iniciarMensajesProgramados(sock);
               jidUsuario
             );
           } catch (err) {
-            console.log(`❌ Error procesando mensaje en ${nombreGrupo}:`, err.message);
+            console.log(`❌ Error en ${nombreGrupo}:`, err.message);
           }
         });
       }

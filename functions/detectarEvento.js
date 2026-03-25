@@ -1,7 +1,7 @@
 // functions/detectarEvento.js
 
 import { supabase } from "./supabase.js";
-import { horaColombia } from "./tiempoColombia.js";
+import { horaColombia, ahoraColombia, yaPasoHora } from "./tiempoColombia.js";
 
 import {
   extraerEventos,
@@ -20,7 +20,6 @@ export async function detectarEvento(sock, grupoId, texto) {
   if (!ev) return;
 
   const hoy = new Date().toISOString().split("T")[0];
-  const ahora = horaColombia();
 
   const numeros = obtenerNumerosValidos();
 
@@ -32,32 +31,32 @@ export async function detectarEvento(sock, grupoId, texto) {
 
   if (data.length > 0) {
 
-  const evDB = data[0];
+    const evDB = data[0];
 
-  // 🔴 SI YA VENCIÓ → cerrar
-  if (ahora >= evDB.hora_cierre && evDB.estado !== "cerrado") {
-    console.log("⚠️ Evento anterior vencido → cerrando");
-    await cerrarGrupo(sock, grupoId);
+    // 🔴 SI YA VENCIÓ → cerrar
+    if (yaPasoHora(evDB.hora_cierre) && evDB.estado !== "cerrado") {
+      console.log("⚠️ Evento anterior vencido → cerrando");
+      await cerrarGrupo(sock, grupoId);
+    }
+
+    // 🧠 SI ES EL MISMO EVENTO → NO HACER NADA
+    if (
+      evDB.hora_fin === ev.hora &&
+      evDB.hora_cierre === ev.horaCierre &&
+      evDB.estado === "abierto"
+    ) {
+      console.log("⚖️ Evento repetido → ignorado");
+      return;
+    }
+
+    // 🧹 SOLO SI ES DIFERENTE
+    await supabase
+      .from("eventos_bot")
+      .delete()
+      .eq("grupo_id", grupoId);
+
+    console.log("♻️ Evento anterior eliminado (nuevo detectado)");
   }
-
-  // 🧠 SI ES EL MISMO EVENTO → NO HACER NADA
-  if (
-    evDB.hora_fin === ev.hora &&
-    evDB.hora_cierre === ev.horaCierre &&
-    evDB.estado === "abierto"
-  ) {
-    console.log("⚖️ Evento repetido → ignorado");
-    return; // 🔥 ESTO ES LO IMPORTANTE
-  }
-
-  // 🧹 SOLO SI ES DIFERENTE
-  await supabase
-    .from("eventos_bot")
-    .delete()
-    .eq("grupo_id", grupoId);
-
-  console.log("♻️ Evento anterior eliminado (nuevo detectado)");
-}
 
   const { error } = await supabase
     .from("eventos_bot")
@@ -104,11 +103,11 @@ ${ev.premios.map(p => "• " + p).join("\n")}
   }
 }
 
+
 // 🔥 VERIFICAR AL INICIAR
 export async function verificarEventosPendientes(sock) {
 
   const hoy = new Date().toISOString().split("T")[0];
-  const ahora = horaColombia();
 
   const { data } = await supabase
     .from("eventos_bot")
@@ -126,7 +125,8 @@ export async function verificarEventosPendientes(sock) {
 
     if (ev.estado === "cerrado") continue;
 
-    if (ahora >= ev.hora_cierre) {
+    // 🔴 SI YA PASÓ → cerrar directo
+    if (yaPasoHora(ev.hora_cierre)) {
 
       console.log("⚠️ Evento vencido → cerrando:", ev.grupo_id);
       await cerrarGrupo(sock, ev.grupo_id);
@@ -135,15 +135,23 @@ export async function verificarEventosPendientes(sock) {
 
       const [h, m] = ev.hora_cierre.split(":").map(Number);
 
-      const ahoraDate = new Date();
-      const cierreDate = new Date();
-      cierreDate.setHours(h, m, 0);
+      const ahoraDate = ahoraColombia(); // ✅ Colombia
+      const cierreDate = ahoraColombia(); // base Colombia
+
+      cierreDate.setHours(h, m, 0, 0);
 
       const delay = cierreDate - ahoraDate;
 
       console.log("⏳ Reprogramando cierre:", ev.grupo_id);
 
-      setTimeout(() => cerrarGrupo(sock, ev.grupo_id), delay);
+      if (delay <= 0) {
+        console.log("⚠️ Delay negativo → cerrando inmediato");
+        await cerrarGrupo(sock, ev.grupo_id);
+      } else {
+        setTimeout(async () => {
+          await cerrarGrupo(sock, ev.grupo_id);
+        }, delay);
+      }
     }
   }
 }
