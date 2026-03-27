@@ -20,6 +20,7 @@ import { escanearGrupos } from "./functions/scannerGrupos.js";
 import { verificarCierres } from "./functions/eventoUtils.js";
 
 console.log("🚀 BOT INICIANDO...");
+console.log("1.0.1 INICIADO ✅");
 
 let sock;
 let starting = false;
