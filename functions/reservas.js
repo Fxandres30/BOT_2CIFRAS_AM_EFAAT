@@ -92,16 +92,23 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
   // 🔥 USUARIO DESDE JID
   const { telefonoFinal, lidFinal } = await obtenerUsuario(jidUsuario);
 
-  if (!telefonoFinal) {
-    console.log("⚠️ Usuario sin teléfono:", jidUsuario);
+  // ✅ ID ÚNICO (CLAVE)
+  let usuarioId = telefonoFinal || lidFinal;
+
+  if (!usuarioId) {
+    console.log("❌ Usuario inválido:", jidUsuario);
     return;
+  }
+
+  // log limpio
+  if (!telefonoFinal) {
+    console.log("ℹ️ Usuario LID:", lidFinal);
   }
 
   const nombre = msg.pushName || "Sin nombre";
 
   console.log("👤 Usuario:", nombre);
-  console.log("📞 Teléfono:", telefonoFinal);
-  console.log("🆔 LID:", lidFinal);
+  console.log("🆔 ID:", usuarioId);
 
   const { data, error } = await supabase
     .from(tabla)
@@ -111,11 +118,11 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
   if (error) return;
 
   const ocupadosPorOtros = data
-    .filter(n => n.estado !== "libre" && n.contacto !== telefonoFinal)
+    .filter(n => n.estado !== "libre" && n.contacto !== usuarioId)
     .map(n => n.numero);
 
   const yaSonMios = data
-    .filter(n => n.contacto === telefonoFinal)
+    .filter(n => n.contacto === usuarioId)
     .map(n => n.numero);
 
   const disponibles = numeros.filter(
@@ -149,7 +156,7 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
       .update({
         estado: "reservado",
         comprador: nombre,
-        contacto: telefonoFinal,
+        contacto: usuarioId,
         lib: lidFinal
       })
       .eq("numero", numero)
@@ -175,16 +182,16 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
     let respuesta = "";
 
     if (reservados.length > 0) {
-  const plantilla = mensajeAleatorio(encabezadosReservados);
-  const texto = plantilla.replace("{numeros}", reservados.join(" - "));
-  respuesta += `${texto}\n\n`;
-}
+      const plantilla = mensajeAleatorio(encabezadosReservados);
+      const texto = plantilla.replace("{numeros}", reservados.join(" - "));
+      respuesta += `${texto}\n\n`;
+    }
 
-if (ocupadosPorOtros.length > 0) {
-  const plantilla = mensajeAleatorio(encabezadosOcupados);
-  const texto = plantilla.replace("{numeros}", ocupadosPorOtros.join(" - "));
-  respuesta += texto;
-}
+    if (ocupadosPorOtros.length > 0) {
+      const plantilla = mensajeAleatorio(encabezadosOcupados);
+      const texto = plantilla.replace("{numeros}", ocupadosPorOtros.join(" - "));
+      respuesta += texto;
+    }
 
     await responder(sock, grupoId, respuesta, msg);
   }
@@ -195,8 +202,8 @@ if (ocupadosPorOtros.length > 0) {
       text: `📥 Reserva confirmada
 
 👤 Usuario: ${nombre}
-📞 Teléfono: ${telefonoFinal}
-🆔 LID: ${lidFinal}
+🆔 ID: ${usuarioId}
+📞 Teléfono: ${telefonoFinal || "No disponible"}
 📍 Grupo: ${nombreGrupo}
 🔢 Números: ${reservados.join(", ")}`
     });
