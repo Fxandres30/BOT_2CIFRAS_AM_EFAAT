@@ -1,7 +1,8 @@
 export const ADMINS = [
   "573104538811",
   "221951796732143",
-  "3001582621"
+  "3001582621",
+   "45123631075482"
 ];
 
 export const NUMERO_ADMIN = "573014123951@s.whatsapp.net";
