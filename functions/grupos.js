@@ -2,7 +2,7 @@ export const GRUPOS_PERMITIDOS = {
 
   "120363418497965618@g.us": {
     nombre: "#1 efaat Diarias",
-    tabla: "reservas_dos_cifras" // 👈 NOMBRE REAL
+    tabla:  "reservas_dos_cifras" // 👈 NOMBRE REAL
   },
   
   "120363422425898785@g.us": {
