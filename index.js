@@ -19,7 +19,7 @@ import { GRUPOS_PERMITIDOS } from "./functions/grupos.js";
 import { escanearGrupos } from "./functions/scannerGrupos.js";
 import { verificarCierres } from "./functions/eventoUtils.js";
 
-console.log("🚀 BOT INICIANDO...");
+console.log("🚀 BOT INICIANDO V 1.0.1");
 
 let sock;
 let starting = false;
