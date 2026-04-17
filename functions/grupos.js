@@ -16,12 +16,12 @@ export const GRUPOS_PERMITIDOS = {
   },
   
   "120363425078329823@g.us": {
-    nombre: "Grupo PRUEVA",
+    nombre: "Gr PRUEVA",
     tabla:  "5k_15k_reservas_2_cifras" // 👈 NOMBRE REAL
   },
 
-  "120363424010559762@g.us": {
-    nombre: "GRUPO HOY",
+  "120363409613068259@g.us": {
+    nombre: "PRUEVA SAAS",
     tabla:  "reservas_dos_cifras" // 👈 NOMBRE REAL
   }
 };

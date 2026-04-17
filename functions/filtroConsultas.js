@@ -1,3 +1,4 @@
+
 // functions/filtroConsultas.js
 
 import { normalizarTexto } from "./normalizarTexto.js";

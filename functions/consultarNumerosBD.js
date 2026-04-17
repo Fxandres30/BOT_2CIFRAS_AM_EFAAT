@@ -53,13 +53,13 @@ export async function obtenerNumerosUsuario(jidUsuario, tabla) {
       telefonoFinal = data[0].telefono;
     } else {
       console.log("❌ Usuario no encontrado");
-      return [];
+      return { reservados: [], pagados: [] };
     }
   }
 
   if (!telefonoFinal) {
     console.log("⚠️ No se pudo identificar usuario");
-    return [];
+    return { reservados: [], pagados: [] };
   }
 
   // 🔥 CONSULTA
@@ -70,12 +70,26 @@ export async function obtenerNumerosUsuario(jidUsuario, tabla) {
 
   if (error) {
     console.log("❌ Error DB:", error);
-    return [];
+    return { reservados: [], pagados: [] };
   }
 
-  if (!data.length) return [];
+  if (!data.length) {
+    return { reservados: [], pagados: [] };
+  }
 
-  return data
+  // 🔥 DEBUG PRO
+  console.log("📊 DATA CRUDA:", data);
+
+  const reservados = data
     .filter(n => n.estado === "reservado")
     .map(n => n.numero);
+
+  const pagados = data
+    .filter(n => n.estado === "pagado")
+    .map(n => n.numero);
+
+  return {
+    reservados,
+    pagados
+  };
 }

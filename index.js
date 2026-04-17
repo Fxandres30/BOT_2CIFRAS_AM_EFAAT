@@ -67,6 +67,23 @@ async function startBot() {
       if (connection === "open") {
         console.log("✅ CONECTADO");
         console.log("🕐 Hora Colombia:", horaColombia());
+        console.log("📡 ESCANEANDO TODOS LOS GRUPOS...");
+
+try {
+  const grupos = await sock.groupFetchAllParticipating();
+
+  for (const id in grupos) {
+    const grupo = grupos[id];
+
+    console.log("\n━━━━━━━━━━━━━━━━━━");
+    console.log("📍 Grupo:", grupo.subject);
+    console.log("🆔 ID:", id);
+    console.log("👥 Participantes:", grupo.participants.length);
+  }
+
+} catch (err) {
+  console.log("❌ Error obteniendo grupos:", err.message);
+}
 
         // 🔥 VERIFICAR AL INICIAR
         try {
