@@ -159,36 +159,41 @@ export function extraerEventos(texto) {
   const hora = `${String(h).padStart(2, "0")}:${m}`;
   const horaCierre = calcularCierre(hora);
 
-  // 🧾 NOMBRE (línea donde está la hora)
-  const lineaHora = texto.split("\n").find(l => /am|pm/i.test(l)) || "";
+  // 🔹 limpio general (TODO el texto)
+const limpioTexto = normalizarTexto(texto);
 
-  const limpio = normalizarTexto(lineaHora)
+// 🧾 NOMBRE
+const lineaHora = texto.split("\n").find(l => /am|pm/i.test(l)) || "";
+
+const limpioNombre = normalizarTexto(lineaHora)
   .replace(/\d{1,2}\s?\d{2}\s?(am|pm)/i, "")
   .trim();
 
-const nombre = limpio
+const nombre = limpioNombre
   .split(" ")
   .map(p => p.charAt(0).toUpperCase() + p.slice(1))
   .join(" ") || "Evento";
 
-  // 💰 VALOR (ARREGLADO 🔥)
-  const valorMatch = limpio.match(/valor\s*(numero)?\s*([\d\s]+)/i);
 
-  let valor = "No definido";
+// 💰 VALOR (usar limpioTexto 🔥)
+const valorMatch = limpioTexto.match(/valor\s*(numero)?\s*([\d\s]+)/i);
 
-  if (valorMatch) {
-    const numeroLimpio = valorMatch[2].replace(/\s+/g, "");
-    valor = `$${numeroLimpio}`;
-  }
+let valor = "No definido";
 
-  // 🏆 PREMIOS (ARREGLADO 🔥)
-  const premios = texto
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => {
-      const n = normalizarTexto(l);
-      return /\d{3,}/.test(n) && !n.includes("valor");
-    });
+if (valorMatch) {
+  const numeroLimpio = valorMatch[2].replace(/\s+/g, "");
+  valor = `$${numeroLimpio}`;
+}
+
+
+// 🏆 PREMIOS (también con texto completo)
+const premios = texto
+  .split("\n")
+  .map(l => l.trim())
+  .filter(l => {
+    const n = normalizarTexto(l);
+    return /\d{3,}/.test(n) && !n.includes("valor");
+  });
 
   return {
     nombre,
