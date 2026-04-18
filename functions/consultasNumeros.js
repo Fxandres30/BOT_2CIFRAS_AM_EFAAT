@@ -3,6 +3,18 @@
 import { textoPermitidoParaConsulta } from "./filtroConsultas.js";
 import { ahoraColombia } from "./tiempoColombia.js";
 
+// 👇 IMPORTAR MENSAJES
+import {
+  reservadosConSaludo,
+  reservadosSinSaludo,
+  pagadosConSaludo,
+  pagadosSinSaludo,
+  sinNumerosConSaludo,
+  sinNumerosSinSaludo,
+  mixtosConSaludo,
+  mixtosSinSaludo
+} from "./mensajesNumeros.js";
+
 // 🔹 LIMPIAR TEXTO
 function limpiarTexto(texto = "") {
   return texto
@@ -12,7 +24,7 @@ function limpiarTexto(texto = "") {
     .trim();
 }
 
-// 🔥 DETECCIÓN INTELIGENTE (PRO)
+// 🔥 DETECCIÓN INTELIGENTE
 export function esConsultaNumeros(texto = "") {
 
   if (!texto) return false;
@@ -104,46 +116,6 @@ function obtenerSaludoPorHora() {
   return lista[Math.floor(Math.random() * lista.length)];
 }
 
-// 🔹 RESERVADOS
-function frasesConSaludo(saludo, lista) {
-  return [
-    `*${saludo}*\n\nActualmente tienes reservados:\n🎟️ ${lista}\n\nPendientes de confirmación ⏳`,
-    `*${saludo}*\n\nLlevas el numero *${lista}* apartado 🔥`,
-    `*${saludo}*\n\nPor ahora vas con:\n🎟️ ${lista}\n\nEstán apartados para ti 😉`,
-    `*${saludo}*\n\nVas participando con:\n🎟️ ${lista}\n\nCompleta el pago para asegurarlos 💰`,
-    `*${saludo}*\n\nYa tienes separados:\n🔥 ${lista}\n\nNo los dejes ir, confírmalos antes de que se liberen ⚠️`,
-    `*${saludo}*\n\nTus números apartados son:\n📌 ${lista}\n\nRecuerda cancelarlos a tiempo para no perderlos 🔥`,
-  ];
-}
-
-function frasesSinSaludo(lista) {
-  return [
-    `Tiene el *${lista}* reservado ✅`,
-    `Va con el numero *${lista}* hasta el momento 🔥`,
-    `Listo, Por ahora llevas el *${lista}* reservados  ✅`,
-    `Tus números apartados son : *${lista}* 🎯`
-  ];
-}
-
-// 🔹 PAGADOS
-function frasesPagadasConSaludo(saludo, lista) {
-  return [
-    `*${saludo}*\n\nYa tiene el *${lista}* pagos ✅`,
-    `*${saludo}*\n\nTus números *${lista}* están confirmados 💰`,
-    `*${saludo}*\n\nEl *${lista}* ya está pago 🔥`,
-    `*${saludo}*\n\nTodo listo, *${lista}* confirmados 🎯`
-  ];
-}
-
-function frasesPagadasSinSaludo(lista) {
-  return [
-    `Ya tienes el *${lista}* pagos ✅`,
-    `Tus números *${lista}* están confirmados 💰`,
-    `El *${lista}* ya están candelados 🔥`,
-    `Todo listo, *${lista}* confirmado 🎯`
-  ];
-}
-
 // 🔥 FUNCIÓN PRINCIPAL
 export function respuestaAleatoriaNumeros(
   numeros = [],
@@ -164,12 +136,12 @@ export function respuestaAleatoriaNumeros(
 
   if (estado === "pagado") {
     respuestas = conSaludo
-      ? frasesPagadasConSaludo(saludoHora, lista)
-      : frasesPagadasSinSaludo(lista);
+      ? pagadosConSaludo(saludoHora, lista)
+      : pagadosSinSaludo(lista);
   } else {
     respuestas = conSaludo
-      ? frasesConSaludo(saludoHora, lista)
-      : frasesSinSaludo(lista);
+      ? reservadosConSaludo(saludoHora, lista)
+      : reservadosSinSaludo(lista);
   }
 
   return respuestas[Math.floor(Math.random() * respuestas.length)];
@@ -181,42 +153,14 @@ export function respuestaSinNumeros(textoUsuario = "") {
   const conSaludo = tieneSaludo(textoUsuario);
   const saludoHora = obtenerSaludoPorHora();
 
-  const conSaludoRespuestas = [
-    `${saludoHora}\n\nAún no tienes números 😅\n\n¿Te aparto unos antes de que se agoten? 🔥`,
-    `${saludoHora}\n\nAún no tienes números registrados 😅`,
-    `${saludoHora}\n\nTodavía no has apartado números para esta dinamica ❌👀`,
-    `${saludoHora}\n\nTodavía no tiene numeros apartados 🚫👀`,
-    `${saludoHora}\n\nTodavía no tienes números 😅\n\nEstamos a tiempo 🔥`,
-    `${saludoHora}\n\nNo tienes números registrados ❌\n\nAún estás a tiempo de entrar 💰`,
-    `${saludoHora}\n\nNo tienes números en esta dinámica por ahora 🚫`,
-    `${saludoHora}\n\nNo tienes números activos 🚫\n\nAprovecha antes de que se llenen 🔥`,
-    `${saludoHora}\n\nAún no tienes números reservados 😅\n\nPero tranquilo, todavía hay disponibles 😉`
-  ];
-
-  const sinSaludoRespuestas = [
-    "*Sin números registrados por ahora 📭*",
-    "*Todavía no has apartado números 👀❌*",
-    "*Sin números por ahora 🚫*\n\nAprovecha antes de que se acaben 🔥",
-    "*Aún no tienes números 😅*\n\n¿Quieres que te aparte algunos? 🔥"
-  ];
-
   const respuestas = conSaludo
-    ? conSaludoRespuestas
-    : sinSaludoRespuestas;
+    ? sinNumerosConSaludo(saludoHora)
+    : sinNumerosSinSaludo();
 
   return respuestas[Math.floor(Math.random() * respuestas.length)];
 }
 
 // 🔥 MIXTO
-function frasesMixtas(saludo, reservados, pagados) {
-  return [
-    `*${saludo}*\n\nAsí vas con tus números 👇\n\n💰 ${pagados}\n📌 ${reservados}\n\nSolo falta confirmar los pendientes 🔥`,
-    `*${saludo}*\n\nYa tienes confirmados: *${pagados}* ✅\nY el *${reservados}* aun pendiente de pago. 🔥`,
-    `*${saludo}*\n\nPor ahora vas con:\n\n💰 ${pagados}\n📌 ${reservados}\n\nConfirma los pendientes para poder participar 💯`
-    
-  ];
-}
-
 export function respuestaMixta(reservados = [], pagados = [], textoUsuario = "") {
 
   const conSaludo = tieneSaludo(textoUsuario);
@@ -233,13 +177,9 @@ export function respuestaMixta(reservados = [], pagados = [], textoUsuario = "")
   let respuestas = [];
 
   if (conSaludo) {
-    respuestas = frasesMixtas(saludoHora, listaReservados, listaPagados);
+    respuestas = mixtosConSaludo(saludoHora, listaReservados, listaPagados);
   } else {
-    respuestas = [
-      `Vas con estos números 👇\n\n💰 ${listaPagados}\n📌 ${listaReservados}\n\nSolo falta confirmar los pendientes 🔥`,
-      `Ya tienes pagosy cofiramods el: *${listaPagados}* ✅\nY el *${listaReservados}* aun pendiente de pago. 👀🔥`,
-      `Por ahora vas con:\n\n💰 ${listaPagados} ya cancelados ✅\n 📌 ${listaReservados}\n\nConfirma los pendientes para poder participar 💯`
-    ];
+    respuestas = mixtosSinSaludo(listaPagados, listaReservados);
   }
 
   return respuestas[Math.floor(Math.random() * respuestas.length)];

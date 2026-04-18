@@ -16,10 +16,38 @@ import { delayEscritura } from "./typing.js";
 function extraerNumeros(texto) {
   return texto
     .toLowerCase()
-    .replace(/[o]/g, "0")
+
+    // 🔹 separar letras pegadas a números (el16 → el 16)
+    .replace(/([a-z])(\d)/g, "$1 $2")
+    .replace(/(\d)([a-z])/g, "$1 $2")
+
+    // 🔹 separar conectores tipo "23y45"
+    .replace(/(\d)(y)(\d)/g, "$1 $3")
+
+    // 🔹 separar símbolos
     .replace(/[_\-.,;/|\\()]+/g, " ")
+
+    // 🔹 dividir palabras
+    .split(/\s+/)
+
+    // 🔹 limpiar tokens
+    .map(token => {
+      if (/^[0-9o]{1,3}$/.test(token)) {
+        return token.replace(/o/g, "0");
+      }
+      return token;
+    })
+
+    .join(" ")
+
+    // 🔹 convertir 1 → 01
     .replace(/\b([0-9])\b/g, "0$1")
-    .match(/\b\d{2}\b/g) || [];
+
+    // 🔹 extraer solo números válidos
+    .match(/\b\d{2}\b/g)
+
+    // 🔹 limitar rango
+    ?.filter(n => Number(n) <= 99) || [];
 }
 
 /* responder */
