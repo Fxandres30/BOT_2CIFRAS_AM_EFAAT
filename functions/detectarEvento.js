@@ -17,19 +17,29 @@ export async function detectarEvento(sock, grupoId, texto) {
   if (!texto) return;
 
   const ev = extraerEventos(texto);
-  if (!ev) return;
+
+  // 🔴 si no detecta evento válido → salir
+  if (!ev || !ev.hora) {
+    console.log("⚠️ No se pudo extraer evento válido");
+    return;
+  }
 
   const hoy = new Date().toISOString().split("T")[0];
 
   const numeros = obtenerNumerosValidos();
 
-  const { data } = await supabase
+  const { data, error: errorConsulta } = await supabase
     .from("eventos_bot")
     .select("*")
     .eq("grupo_id", grupoId)
     .limit(1);
 
-  if (data.length > 0) {
+  if (errorConsulta) {
+    console.log("❌ Error consultando BD:", errorConsulta.message);
+    return;
+  }
+
+  if (data && data.length > 0) {
 
     const evDB = data[0];
 
@@ -58,6 +68,7 @@ export async function detectarEvento(sock, grupoId, texto) {
     console.log("♻️ Evento anterior eliminado (nuevo detectado)");
   }
 
+  // ✅ INSERTAR NUEVO EVENTO
   const { error } = await supabase
     .from("eventos_bot")
     .insert({
@@ -75,23 +86,28 @@ export async function detectarEvento(sock, grupoId, texto) {
 
   console.log("✅ Evento nuevo insertado");
 
+  // 🔓 abrir grupo
   await abrirGrupo(sock, grupoId);
 
+  // ⏳ programar cierre
   programarCierre(sock, grupoId, ev.hora);
 
+  // 📲 notificación
   if (numeros.length) {
 
     const mensaje = `🎯 *EVENTO DETECTADO*
 
 📍 Grupo: ${grupoId}
 
-🎯 *${ev.nombre}*
+🎯 *${ev.nombre || "Evento"}*
 🕐 Hora: ${ev.hora}
 ⏳ Cierra: ${ev.horaCierre}
-💰 Valor: ${ev.valor}
+💰 Valor: ${ev.valor || "No definido"}
 
 🏆 Premios:
-${ev.premios.map(p => "• " + p).join("\n")}
+${(ev.premios && ev.premios.length)
+  ? ev.premios.map(p => "• " + p).join("\n")
+  : "No definidos"}
 
 ───────────────`;
 
@@ -109,12 +125,17 @@ export async function verificarEventosPendientes(sock) {
 
   const hoy = new Date().toISOString().split("T")[0];
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("eventos_bot")
     .select("*")
     .eq("fecha_evento", hoy);
 
-  if (!data.length) {
+  if (error) {
+    console.log("❌ Error consultando eventos:", error.message);
+    return;
+  }
+
+  if (!data || !data.length) {
     console.log("📭 No hay eventos pendientes");
     return;
   }
@@ -135,8 +156,8 @@ export async function verificarEventosPendientes(sock) {
 
       const [h, m] = ev.hora_cierre.split(":").map(Number);
 
-      const ahoraDate = ahoraColombia(); // ✅ Colombia
-      const cierreDate = ahoraColombia(); // base Colombia
+      const ahoraDate = ahoraColombia();
+      const cierreDate = ahoraColombia();
 
       cierreDate.setHours(h, m, 0, 0);
 
@@ -149,7 +170,11 @@ export async function verificarEventosPendientes(sock) {
         await cerrarGrupo(sock, ev.grupo_id);
       } else {
         setTimeout(async () => {
-          await cerrarGrupo(sock, ev.grupo_id);
+          try {
+            await cerrarGrupo(sock, ev.grupo_id);
+          } catch (err) {
+            console.log("❌ Error en cierre reprogramado:", err.message);
+          }
         }, delay);
       }
     }
