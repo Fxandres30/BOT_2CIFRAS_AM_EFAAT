@@ -72,12 +72,14 @@ export async function detectarEvento(sock, grupoId, texto) {
   const { error } = await supabase
     .from("eventos_bot")
     .insert({
-      grupo_id: grupoId,
-      hora_fin: ev.hora,
-      hora_cierre: ev.horaCierre,
-      fecha_evento: hoy,
-      estado: "abierto"
-    });
+  grupo_id: grupoId,
+  hora_fin: ev.hora,
+  hora_cierre: ev.horaCierre,
+  fecha_evento: hoy,
+  estado: "abierto",
+  valor: ev.valor,
+  premios: ev.premios
+});
 
   if (error) {
     console.log("❌ Error guardando:", error.message);
