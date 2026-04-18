@@ -61,11 +61,16 @@ export async function procesarPago(sock, msg, configGrupo, jidUsuario) {
 
   console.log("🧩 Sticker ID:", stickerID);
 
+  const grupoId = msg.key.remoteJid;
+
+const metadata = await sock.groupMetadata(grupoId);
+
+const esAdmin = metadata.participants.some(p =>
+  (p.id === jidUsuario || p.id === msg.key.participant) &&
+  (p.admin === "admin" || p.admin === "superadmin")
+);
+
   // 🔥 VALIDAR ADMIN POR NÚMERO (FIX REAL)
-  const numeroUsuario = limpiarNumero(jidUsuario);
-
-  const esAdmin = ADMINS.includes(numeroUsuario);
-
   if (!esAdmin) {
     console.log("⛔ No es admin");
     return;

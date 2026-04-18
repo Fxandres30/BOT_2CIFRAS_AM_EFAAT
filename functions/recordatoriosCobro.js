@@ -36,7 +36,7 @@ function mensajeCobroAleatorio(evento) {
 
 Que estamos jugando con *${evento.nombre}* ✍️👀
 
-Vayan cancelando sus numeritos para que no sean liberados ☘️🎯
+*Vayan cancelando sus numeritos para que no sean liberados ☘️🎯*
 
 💰 Valor: ${evento.valor}
 
@@ -58,7 +58,7 @@ Recuerden ir cancelando para evitar liberaciones ⚠️
 
 Estamos jugando *${evento.nombre}* ✍️
 
-No dejen sus números sin pagar 👀
+*No dejen sus números sin pagar 👀*
 
 💰 Valor: ${evento.valor}
 
