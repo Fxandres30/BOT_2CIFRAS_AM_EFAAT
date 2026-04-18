@@ -1,12 +1,30 @@
 import { ahoraColombia } from "./tiempoColombia.js";
 
 // 🧠 tiempos por valor (en minutos)
+// 🧠 múltiples tiempos por valor (minutos antes del CIERRE)
+// EJEMPLO base: si el cierre es a las 22:25 (10:25 PM)
+
 const mapaTiempos = {
-  10000: 1,  // 6h
-  5000: 1,   // 5h
-  2000: 1,   // 2.5h
-  1500: 1,
-  1000: 1    // 2h
+
+  // 💰 10.000
+  // 360 min = 6h → 16:25 (4:25 PM) // 180 min = 3h → 19:25 (7:25 PM) 60 min = 1h → 21:25 (9:25 PM)
+  10000: [360, 180, 60],
+
+  // 💰 5.000
+  // 300 min = 5h → 17:25 (5:25 PM) // 120 min = 2h → 20:25 (8:25 PM) // 45 min → 21:40 (9:40 PM)
+  5000: [300, 120, 45],
+
+  // 💰 2.000
+  // 150 min = 2h30 → 19:55 (7:55 PM) // 60 min = 1h → 21:25 (9:25 PM)
+  2000: [150, 60],
+
+  // 💰 1.500
+  // 150 min = 2h30 → 19:55 (7:55 PM) // 60 min = 1h → 21:25 (9:25 PM)
+  1500: [150, 60, ],
+
+  // 💰 1.000
+  // 120 min = 2h → 20:25 (8:25 PM) // 45 min → 21:40 (9:40 PM)
+  1000: [120, 45]
 };
 
 // 🎲 MENSAJES ALEATORIOS (ESTILO HUMANO 🔥)
@@ -68,56 +86,56 @@ No se queden por fuera ☘️🎯
 
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`
-  ];
+    ];
 
-  const random = Math.floor(Math.random() * mensajes.length);
-  return mensajes[random];
+  return mensajes[Math.floor(Math.random() * mensajes.length)];
 }
 
 
 // 🚀 FUNCIÓN PRINCIPAL
+// 🚀 FUNCIÓN PRINCIPAL
 export function programarCobros(sock, grupoId, evento) {
 
-  if (!evento.valor || !evento.hora) return;
+  if (!evento.valor || !evento.horaCierre) return;
 
   const valorNum = parseInt(evento.valor.replace(/\D/g, ""));
 
-  const minutosAntes = mapaTiempos[valorNum];
+  const tiempos = mapaTiempos[valorNum];
 
-  if (!minutosAntes) {
-    console.log("⚠️ Valor sin configuración de cobro:", valorNum);
+  if (!tiempos) {
+    console.log("⚠️ Sin tiempos para valor:", valorNum);
     return;
   }
 
   const ahora = ahoraColombia();
 
-  const [h, m] = evento.hora.split(":").map(Number);
+  const [h, m] = evento.horaCierre.split(":").map(Number);
 
-  const eventoDate = ahoraColombia();
-  eventoDate.setHours(h, m, 0, 0);
+  const cierreDate = ahoraColombia();
+  cierreDate.setHours(h, m, 0, 0);
 
-  const tiempoEnvio = new Date(eventoDate.getTime() - minutosAntes * 60000);
+  for (const minutosAntes of tiempos) {
 
-  const delay = tiempoEnvio - ahora;
+    const envio = new Date(cierreDate.getTime() - minutosAntes * 60000);
 
-  console.log(`⏰ Cobro programado (${valorNum}) →`, tiempoEnvio.toLocaleTimeString());
+    const delay = envio - ahora;
 
-  if (delay <= 0) {
-    console.log("⚠️ Ya pasó el tiempo de cobro");
-    return;
+    if (delay <= 0) continue;
+
+    console.log(`⏰ Cobro (${valorNum}) en ${minutosAntes} min →`, envio.toLocaleTimeString());
+
+    setTimeout(async () => {
+      try {
+
+        const mensaje = mensajeCobroAleatorio(evento);
+
+        await sock.sendMessage(grupoId, { text: mensaje });
+
+        console.log("💰 Cobro enviado");
+
+      } catch (err) {
+        console.log("❌ Error cobro:", err.message);
+      }
+    }, delay);
   }
-
-  setTimeout(async () => {
-    try {
-
-      const mensaje = mensajeCobroAleatorio(evento);
-
-      await sock.sendMessage(grupoId, { text: mensaje });
-
-      console.log("💰 Recordatorio de cobro enviado");
-
-    } catch (err) {
-      console.log("❌ Error enviando cobro:", err.message);
-    }
-  }, delay);
 }
