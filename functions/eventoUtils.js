@@ -3,6 +3,7 @@
 import { NUMERO_NOTIFICACION } from "./config.js";
 import { supabase } from "./supabase.js";
 import { ahoraColombia } from "./tiempoColombia.js";
+import { normalizarTexto } from "./normalizarTexto.js";
 
 
 // 🔥 CALCULAR CIERRE (5 min antes)
@@ -124,72 +125,74 @@ export async function verificarCierres(sock) {
 // 🔍 EXTRAER EVENTO
 export function extraerEventos(texto) {
 
-  const bloques = texto.split("\n\n");
+  if (!texto) return null;
 
-  for (const bloque of bloques) {
+  const limpio = normalizarTexto(texto);
 
-    const limpio = bloque.replace(/\*/g, "").toLowerCase();
+  // 🧠 validar que sea evento real
+  const palabrasClave = [
+    "loter",
+    "antioque",
+    "sinuano",
+    "chance",
+    "astro",
+    "paisita",
+    "cafetero",
+    "caribe",
+    "dorado",
+    "superastro",
+    "chontico"
+  ];
 
-    if (
-      limpio.includes("liberados") ||
-      limpio.includes("recuerde") ||
-      limpio.includes("nequi") ||
-      limpio.includes("daviplata")
-    ) continue;
+  if (!palabrasClave.some(p => limpio.includes(p))) return null;
 
-    const palabrasClave = [
-      "loter",
-      "antioque",
-      "sinuano",
-      "chance",
-      "astro",
-      "paisita",
-      "cafetero",
-      "caribe",
-      "dorado",
-      "superastro",
-      "chontico"
-    ];
+  // 🕐 HORA
+  const match = limpio.match(/(\d{1,2})\s?(\d{2})\s?(am|pm)/i);
+  if (!match) return null;
 
-    if (!palabrasClave.some(p => limpio.includes(p))) continue;
+  let [_, h, m, periodo] = match;
+  h = parseInt(h);
 
-    const match = limpio.match(/(\d{1,2}):(\d{2})\s?(am|pm)/i);
-    if (!match) continue;
+  if (periodo === "pm" && h !== 12) h += 12;
+  if (periodo === "am" && h === 12) h = 0;
 
-    let [_, h, m, periodo] = match;
-    h = parseInt(h);
+  const hora = `${String(h).padStart(2, "0")}:${m}`;
+  const horaCierre = calcularCierre(hora);
 
-    if (periodo === "pm" && h !== 12) h += 12;
-    if (periodo === "am" && h === 12) h = 0;
+  // 🧾 NOMBRE (línea donde está la hora)
+  const lineaHora = texto.split("\n").find(l => /am|pm/i.test(l)) || "";
 
-    const hora = `${String(h).padStart(2, "0")}:${m}`;
-    const horaCierre = calcularCierre(hora);
+  const nombre = lineaHora
+    .replace(/[-–]/g, "")
+    .replace(/\d{1,2}:\d{2}.*/i, "")
+    .trim() || "Evento";
 
-    const valorMatch = limpio.match(/valor\s*numero\s*:\s*\$\s?[\d\.]+/i);
-    const valor = valorMatch
-      ? valorMatch[0].match(/\$\s?[\d\.]+/)[0]
-      : "No definido";
+  // 💰 VALOR (ARREGLADO 🔥)
+  const valorMatch = limpio.match(/valor\s*(numero)?\s*([\d\s]+)/i);
 
-    const premios = bloque
-      .split("\n")
-      .filter(l => l.match(/\$\s?[\d\.]+/))
-      .map(l => l.replace(/\*/g, "").trim());
+  let valor = "No definido";
 
-    const nombre = bloque
-      .split("\n")[0]
-      .replace(/\*/g, "")
-      .replace(/^\d+[\.\)]\s*/, "")
-      .trim();
-
-    return {
-      nombre: nombre || "Evento",
-      hora,
-      horaCierre,
-      valor,
-      premios
-    };
+  if (valorMatch) {
+    const numeroLimpio = valorMatch[2].replace(/\s+/g, "");
+    valor = `$${numeroLimpio}`;
   }
 
+  // 🏆 PREMIOS (ARREGLADO 🔥)
+  const premios = texto
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => {
+      const n = normalizarTexto(l);
+      return /\d{3,}/.test(n) && !n.includes("valor");
+    });
+
+  return {
+    nombre,
+    hora,
+    horaCierre,
+    valor,
+    premios
+  };
   return null;
 }
 
