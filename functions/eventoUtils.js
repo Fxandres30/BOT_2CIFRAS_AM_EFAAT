@@ -162,10 +162,14 @@ export function extraerEventos(texto) {
   // 🧾 NOMBRE (línea donde está la hora)
   const lineaHora = texto.split("\n").find(l => /am|pm/i.test(l)) || "";
 
-  const nombre = lineaHora
-    .replace(/[-–]/g, "")
-    .replace(/\d{1,2}:\d{2}.*/i, "")
-    .trim() || "Evento";
+  const limpio = normalizarTexto(lineaHora)
+  .replace(/\d{1,2}\s?\d{2}\s?(am|pm)/i, "")
+  .trim();
+
+const nombre = limpio
+  .split(" ")
+  .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+  .join(" ") || "Evento";
 
   // 💰 VALOR (ARREGLADO 🔥)
   const valorMatch = limpio.match(/valor\s*(numero)?\s*([\d\s]+)/i);
