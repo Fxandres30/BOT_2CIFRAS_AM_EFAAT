@@ -30,9 +30,9 @@ function extraerNumeros(texto) {
     // 🔹 dividir palabras
     .split(/\s+/)
 
-    // 🔹 limpiar tokens
+    // 🔥 SOLO tokens válidos de 2 caracteres
     .map(token => {
-      if (/^[0-9o]{1,3}$/.test(token)) {
+      if (/^[0-9o]{2}$/.test(token)) {
         return token.replace(/o/g, "0");
       }
       return token;
@@ -40,10 +40,7 @@ function extraerNumeros(texto) {
 
     .join(" ")
 
-    // 🔹 convertir 1 → 01
-    .replace(/\b([0-9])\b/g, "0$1")
-
-    // 🔹 extraer solo números válidos
+    // 🔹 extraer solo números de 2 cifras
     .match(/\b\d{2}\b/g)
 
     // 🔹 limitar rango
