@@ -11,6 +11,8 @@ import {
   obtenerNumerosValidos
 } from "./eventoUtils.js";
 
+import { programarCobros } from "./recordatoriosCobro.js";
+
 // 🚀 FUNCIÓN PRINCIPAL
 export async function detectarEvento(sock, grupoId, texto) {
 
@@ -93,6 +95,9 @@ export async function detectarEvento(sock, grupoId, texto) {
 
   // ⏳ programar cierre
   programarCierre(sock, grupoId, ev.hora);
+
+  // 💰 programar cobros automáticos
+programarCobros(sock, grupoId, ev);
 
   // 📲 notificación
   if (numeros.length) {
