@@ -73,6 +73,7 @@ export async function detectarEvento(sock, grupoId, texto) {
     .from("eventos_bot")
     .insert({
   grupo_id: grupoId,
+  nombre_evento: ev.nombre,
   hora_fin: ev.hora,
   hora_cierre: ev.horaCierre,
   fecha_evento: hoy,
@@ -80,7 +81,6 @@ export async function detectarEvento(sock, grupoId, texto) {
   valor: ev.valor,
   premios: ev.premios
 });
-
   if (error) {
     console.log("❌ Error guardando:", error.message);
     return;
