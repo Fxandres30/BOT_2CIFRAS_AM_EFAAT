@@ -2,11 +2,11 @@ import { ahoraColombia } from "./tiempoColombia.js";
 
 // 🧠 tiempos por valor (en minutos)
 const mapaTiempos = {
-  10000: 360,  // 6h
-  5000: 300,   // 5h
-  2000: 150,   // 2.5h
-  1500: 150,
-  1000: 120    // 2h
+  10000: 1,  // 6h
+  5000: 1,   // 5h
+  2000: 1,   // 2.5h
+  1500: 1,
+  1000: 1    // 2h
 };
 
 // 🎲 MENSAJES ALEATORIOS (ESTILO HUMANO 🔥)
