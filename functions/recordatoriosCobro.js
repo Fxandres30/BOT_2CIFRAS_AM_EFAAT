@@ -80,21 +80,48 @@ No se queden por fuera ☘️🎯
 
 export async function crearCobrosEvento(evento) {
 
-  if (!evento.valor || !evento.hora_cierre) return;
+  console.log("📦 EVENTO RECIBIDO:", evento);
 
-  const valorNum = parseInt(evento.valor.replace(/\D/g, ""));
+  if (!evento.valor || !evento.hora_cierre) {
+    console.log("❌ Falta valor u hora_cierre");
+    return;
+  }
+
+  const valorLimpio = evento.valor.replace(/\D/g, "");
+  const valorNum = parseInt(valorLimpio);
+
+  console.log("💰 Valor original:", evento.valor);
+  console.log("💰 Valor limpio:", valorLimpio);
+  console.log("💰 Valor numérico:", valorNum);
+
   const tiempos = mapaTiempos[valorNum];
+
+  console.log("⏱️ Tiempos encontrados:", tiempos);
 
   if (!tiempos) {
     console.log("⚠️ Sin tiempos para valor:", valorNum);
     return;
   }
 
-  // 🔥 AQUÍ EL FIX REAL
+  if (!evento.fecha_evento) {
+    console.log("❌ evento.fecha_evento no existe");
+    return;
+  }
+
+  console.log("📅 Fecha evento:", evento.fecha_evento);
+  console.log("🕐 Hora cierre:", evento.hora_cierre);
+
   const [year, month, day] = evento.fecha_evento.split("-").map(Number);
   const [h, m] = evento.hora_cierre.split(":").map(Number);
 
   const cierreDate = new Date(year, month - 1, day, h, m, 0);
+
+  console.log("🧠 Fecha cierre construida:", cierreDate);
+
+  if (isNaN(cierreDate.getTime())) {
+    console.log("❌ Fecha inválida");
+    return;
+  }
 
   const cobros = [];
 
@@ -102,6 +129,11 @@ export async function crearCobrosEvento(evento) {
 
     const minutosAntes = tiempos[i];
     const envio = new Date(cierreDate.getTime() - minutosAntes * 60000);
+
+    console.log(`⏰ Cobro ${i + 1}:`, {
+      minutosAntes,
+      envio: envio.toISOString()
+    });
 
     cobros.push({
       evento_id: evento.id,
@@ -113,10 +145,12 @@ export async function crearCobrosEvento(evento) {
     });
   }
 
+  console.log("📦 COBROS A INSERTAR:", cobros);
+
   const { error } = await supabase.from("cobros").insert(cobros);
 
   if (error) {
-    console.log("❌ Error creando cobros:", error.message);
+    console.log("❌ Error creando cobros:", error);
   } else {
     console.log(`✅ ${cobros.length} cobros creados`);
   }
