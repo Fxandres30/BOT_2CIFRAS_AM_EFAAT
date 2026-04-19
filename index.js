@@ -18,6 +18,7 @@ import { procesarEntrada } from "./functions/entrada.js";
 import { GRUPOS_PERMITIDOS } from "./functions/grupos.js";
 import { escanearGrupos } from "./functions/scannerGrupos.js";
 import { verificarCierres } from "./functions/eventoUtils.js";
+import { procesarCobros } from "./functions/recordatoriosCobro.js";
 
 console.log("🚀 BOT INICIANDO V 1.0.1");
 
@@ -106,6 +107,11 @@ try {
 
         // 🔥 ESCÁNER INICIAL
         escanearGrupos(sock);
+
+        //procesarCobros
+        setInterval(() => {
+  procesarCobros(sock);
+}, 30000); // cada 20 segundos
 
         // 🔥 INTERVALO ESCÁNER
         if (!intervaloScanner) {

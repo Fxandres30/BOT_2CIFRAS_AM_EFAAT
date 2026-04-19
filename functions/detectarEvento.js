@@ -11,7 +11,7 @@ import {
   obtenerNumerosValidos
 } from "./eventoUtils.js";
 
-import { programarCobros } from "./recordatoriosCobro.js";
+import { crearCobrosEvento } from "./recordatoriosCobro.js";
 
 // 🚀 FUNCIÓN PRINCIPAL
 export async function detectarEvento(sock, grupoId, texto) {
@@ -71,33 +71,37 @@ export async function detectarEvento(sock, grupoId, texto) {
   }
 
   // ✅ INSERTAR NUEVO EVENTO
-  const { error } = await supabase
-    .from("eventos_bot")
-    .insert({
-  grupo_id: grupoId,
-  nombre_evento: ev.nombre,
-  hora_fin: ev.hora,
-  hora_cierre: ev.horaCierre,
-  fecha_evento: hoy,
-  estado: "abierto",
-  valor: ev.valor,
-  premios: ev.premios
-});
-  if (error) {
-    console.log("❌ Error guardando:", error.message);
-    return;
-  }
+  // ✅ INSERTAR NUEVO EVENTO
+const { data: eventoInsertado, error } = await supabase
+  .from("eventos_bot")
+  .insert({
+    grupo_id: grupoId,
+    nombre_evento: ev.nombre,
+    hora_fin: ev.hora,
+    hora_cierre: ev.horaCierre,
+    fecha_evento: hoy,
+    estado: "abierto",
+    valor: ev.valor,
+    premios: ev.premios
+  })
+  .select()
+  .single();
 
-  console.log("✅ Evento nuevo insertado");
+if (error) {
+  console.log("❌ Error guardando:", error.message);
+  return;
+}
 
-  // 🔓 abrir grupo
-  await abrirGrupo(sock, grupoId);
+console.log("✅ Evento nuevo insertado");
 
-  // ⏳ programar cierre
-  programarCierre(sock, grupoId, ev.hora);
+// 🔥 CREAR COBROS (AQUÍ VA)
+await crearCobrosEvento(eventoInsertado);
 
-  // 💰 programar cobros automáticos
-programarCobros(sock, grupoId, ev);
+// 🔓 abrir grupo
+await abrirGrupo(sock, grupoId);
+
+// ⏳ programar cierre
+programarCierre(sock, grupoId, ev.hora);
 
   // 📲 notificación
   if (numeros.length) {

@@ -1,40 +1,23 @@
+import { supabase } from "./supabase.js";
 import { ahoraColombia } from "./tiempoColombia.js";
 
-// 🧠 tiempos por valor (en minutos)
-// 🧠 múltiples tiempos por valor (minutos antes del CIERRE)
-// EJEMPLO base: si el cierre es a las 22:25 (10:25 PM)
-
+// 🧠 tiempos por valor (NO SE TOCA)
 const mapaTiempos = {
-
-  // 💰 10.000
-  // 360 min = 6h → 16:25 (4:25 PM) // 180 min = 3h → 19:25 (7:25 PM) 60 min = 1h → 21:25 (9:25 PM)
   10000: [360, 180, 60],
-
-  // 💰 5.000
-  // 300 min = 5h → 17:25 (5:25 PM) // 120 min = 2h → 20:25 (8:25 PM) // 45 min → 21:40 (9:40 PM)
   5000: [300, 120, 45],
-
-  // 💰 2.000
-  // 150 min = 2h30 → 19:55 (7:55 PM) // 60 min = 1h → 21:25 (9:25 PM)
   2000: [150, 60],
-
-  // 💰 1.500
-  // 150 min = 2h30 → 19:55 (7:55 PM) // 60 min = 1h → 21:25 (9:25 PM)
-  1500: [150, 60, ],
-
-  // 💰 1.000
-  // 120 min = 2h → 20:25 (8:25 PM) // 45 min → 21:40 (9:40 PM)
+  1500: [150, 60],
   1000: [120, 45]
 };
 
-// 🎲 MENSAJES ALEATORIOS (ESTILO HUMANO 🔥)
+// 🎲 MENSAJES ALEATORIOS (SE MANTIENE 🔥)
 function mensajeCobroAleatorio(evento) {
 
   const mensajes = [
 
 `👀 *Familia recuerden*
 
-Que estamos jugando con *${evento.nombre}* ✍️👀
+Que estamos jugando *${evento.nombre_evento}* ✍️👀
 
 *Vayan cancelando sus numeritos para que no sean liberados ☘️🎯*
 
@@ -45,7 +28,7 @@ Que estamos jugando con *${evento.nombre}* ✍️👀
 
 `🔥 *Atención grupo*
 
-Sorteo activo *${evento.nombre}* 🎯
+Sorteo activo *${evento.nombre_evento}* 🎯
 
 Recuerden ir cancelando para evitar liberaciones ⚠️
 
@@ -56,7 +39,7 @@ Recuerden ir cancelando para evitar liberaciones ⚠️
 
 `⏰ *Recordatorio familia*
 
-Estamos jugando *${evento.nombre}* ✍️
+Estamos jugando *${evento.nombre_evento}* ✍️
 
 *No dejen sus números sin pagar 👀*
 
@@ -67,7 +50,7 @@ Estamos jugando *${evento.nombre}* ✍️
 
 `🚨 *Ojo grupo*
 
-Números sin cancelar en *${evento.nombre}* serán liberados ⚠️
+Números sin cancelar en *${evento.nombre_evento}* serán liberados ⚠️
 
 Aseguren sus jugadas ☘️
 
@@ -78,7 +61,7 @@ Aseguren sus jugadas ☘️
 
 `🎯 *Vamos con todo*
 
-Recuerden pagar sus números de *${evento.nombre}* ✍️
+Recuerden pagar sus números de *${evento.nombre_evento}* ✍️
 
 No se queden por fuera ☘️🎯
 
@@ -86,20 +69,20 @@ No se queden por fuera ☘️🎯
 
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`
-    ];
+  ];
 
   return mensajes[Math.floor(Math.random() * mensajes.length)];
 }
 
+//////////////////////////////////////////////////////
+// 🚀 1. CREAR COBROS EN BASE DE DATOS
+//////////////////////////////////////////////////////
 
-// 🚀 FUNCIÓN PRINCIPAL
-// 🚀 FUNCIÓN PRINCIPAL
-export function programarCobros(sock, grupoId, evento) {
+export async function crearCobrosEvento(evento) {
 
-  if (!evento.valor || !evento.horaCierre) return;
+  if (!evento.valor || !evento.hora_cierre) return;
 
   const valorNum = parseInt(evento.valor.replace(/\D/g, ""));
-
   const tiempos = mapaTiempos[valorNum];
 
   if (!tiempos) {
@@ -107,35 +90,92 @@ export function programarCobros(sock, grupoId, evento) {
     return;
   }
 
-  const ahora = ahoraColombia();
+  // 🔥 AQUÍ EL FIX REAL
+  const [year, month, day] = evento.fecha_evento.split("-").map(Number);
+  const [h, m] = evento.hora_cierre.split(":").map(Number);
 
-  const [h, m] = evento.horaCierre.split(":").map(Number);
+  const cierreDate = new Date(year, month - 1, day, h, m, 0);
 
-  const cierreDate = ahoraColombia();
-  cierreDate.setHours(h, m, 0, 0);
+  const cobros = [];
 
-  for (const minutosAntes of tiempos) {
+  for (let i = 0; i < tiempos.length; i++) {
 
+    const minutosAntes = tiempos[i];
     const envio = new Date(cierreDate.getTime() - minutosAntes * 60000);
 
-    const delay = envio - ahora;
+    cobros.push({
+      evento_id: evento.id,
+      grupo_id: evento.grupo_id,
+      numero_cobro: i + 1,
+      minutos_antes: minutosAntes,
+      hora_envio: envio.toISOString(),
+      enviado: false
+    });
+  }
 
-    if (delay <= 0) continue;
+  const { error } = await supabase.from("cobros").insert(cobros);
 
-    console.log(`⏰ Cobro (${valorNum}) en ${minutosAntes} min →`, envio.toLocaleTimeString());
+  if (error) {
+    console.log("❌ Error creando cobros:", error.message);
+  } else {
+    console.log(`✅ ${cobros.length} cobros creados`);
+  }
+}
 
-    setTimeout(async () => {
-      try {
+//////////////////////////////////////////////////////
+// 🔁 2. PROCESAR COBROS (REEMPLAZA setTimeout)
+//////////////////////////////////////////////////////
 
-        const mensaje = mensajeCobroAleatorio(evento);
+export async function procesarCobros(sock) {
 
-        await sock.sendMessage(grupoId, { text: mensaje });
+  const ahora = ahoraColombia().toISOString();
 
-        console.log("💰 Cobro enviado");
+  const { data: cobros, error } = await supabase
+    .from("cobros")
+    .select("*")
+    .lte("hora_envio", ahora)
+    .eq("enviado", false);
 
-      } catch (err) {
-        console.log("❌ Error cobro:", err.message);
-      }
-    }, delay);
+  if (error) {
+    console.log("❌ Error buscando cobros:", error.message);
+    return;
+  }
+
+  for (const cobro of cobros) {
+
+    try {
+
+      // 🔥 traer evento
+      const { data: evento } = await supabase
+        .from("eventos_bot")
+        .select("*")
+        .eq("id", cobro.evento_id)
+        .single();
+
+      if (!evento) continue;
+
+// 🔴 NUEVA VALIDACIÓN
+if (evento.estado === "cerrado") {
+  console.log("⛔ Evento cerrado, no se envía cobro");
+  continue;
+}
+
+      const mensaje = mensajeCobroAleatorio(evento);
+
+      await sock.sendMessage(cobro.grupo_id, { text: mensaje });
+
+      await supabase
+        .from("cobros")
+        .update({
+          enviado: true,
+          enviado_en: ahoraColombia().toISOString()
+        })
+        .eq("id", cobro.id);
+
+      console.log(`💰 Cobro ${cobro.numero_cobro} enviado`);
+
+    } catch (err) {
+      console.log("❌ Error enviando cobro:", err.message);
+    }
   }
 }
