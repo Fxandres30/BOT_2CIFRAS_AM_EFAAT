@@ -14,14 +14,14 @@ const mapaTiempos = {
 function mensajeCobroAleatorio(evento) {
 
   const mensajes = [
+ 
+`*Familia recuerden* 👀🚨
 
-`👀 *Familia recuerden*
-
-Que estamos jugando *${evento.nombre_evento}* ✍️👀
+Que estamos jugando con *${evento.nombre_evento}* ✍️👀
 
 *Vayan cancelando sus numeritos para que no sean liberados ☘️🎯*
 
-💰 Valor: ${evento.valor}
+💰 Valor: *${evento.valor}*
 
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`,
@@ -37,22 +37,22 @@ Sorteo activo *${evento.nombre_evento}* 🎯
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`,
 
-`⏰ *Recordatorio familia*
+`*Recordatorio importante familia* ⏰
 
 Estamos jugando *${evento.nombre_evento}* ✍️
 
 *No dejen sus números sin pagar 👀*
 
-💰 Valor: ${evento.valor}
+💰 Valor: *${evento.valor}*
 
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`,
 
-`🚨 *Ojo grupo*
+`🚨 *Ojo grupo* 🚨
 
 *Aseguren sus jugadas ☘️*
 
-*Números sin cancelar con ${evento.nombre_evento} serán liberados media hora anten que juegue ⚠️*
+*Números sin cancelar con ${evento.nombre_evento} serán liberados media hora antes que juegue ⚠️*
 
 💰 Valor: *${evento.valor}*
 
@@ -61,11 +61,11 @@ Estamos jugando *${evento.nombre_evento}* ✍️
 
 `🎯 *Vamos con todo*
 
-Recuerden pagar sus números de *${evento.nombre_evento}* ✍️
+*Recuerden pagar sus números con ${evento.nombre_evento}* ✍️
 
-No se queden por fuera ☘️🎯
+*No se queden por fuera ☘️🎯*
 
-💰 Valor: ${evento.valor}
+💰 Valor: *${evento.valor}*
 
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`
