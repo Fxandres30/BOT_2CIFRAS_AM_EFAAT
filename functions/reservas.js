@@ -250,14 +250,14 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
   if (reservados.length > 0) {
 
     await sock.sendMessage(NUMERO_ADMIN, {
-      text: `📥 Reserva confirmada
+      text: `*📥 Reserva confirmada*
 
-👤 Usuario: ${nombre}
-🆔 ID: ${usuarioId}
-📞 Teléfono: ${telefonoFinal || "No disponible"}
-📍 Grupo: ${nombreGrupo}
-📊 Tabla: ${tabla}
-🔢 Números: ${reservados.join(", ")}`
+👤 Usuario: *${nombre}*
+🆔 ID: *${usuarioId}*
+📞 Teléfono: *${telefonoFinal || "No disponible"}*
+📍 Grupo: *${nombreGrupo}*
+📊 Tabla: *${tabla}*
+🔢 Números: *${reservados.join(", ")}*`
     });
   }
 }

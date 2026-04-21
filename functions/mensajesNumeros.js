@@ -26,7 +26,7 @@ export function frasesPagadosConSaludo(saludo, lista) {
   return [
     `*${saludo}*\n\nYa tienes el *${lista}* pago ✅`,
     `*${saludo}*\n\nTus números *${lista}* están confirmados 💰`,
-    `*${saludo}*\n\nEl *${lista}* ya está pago 🔥`,
+    `*${saludo}*\n\n*Tiene el ${lista} pero ya estan cancelados* 🔥✅*`,
     `*${saludo}*\n\nTodo listo, *${lista}* confirmados 🎯`
   ];
 }
@@ -43,12 +43,12 @@ export function frasesPagadosSinSaludo(lista) {
 // 🔹 SIN NÚMEROS
 export function frasesSinNumerosConSaludo(saludo) {
   return [
-    `${saludo}\n\nAún no tienes números 😅\n\n¿Te aparto unos antes de que se agoten? 🔥`,
-    `${saludo}\n\nAún no tienes números registrados 😅`,
+    `${saludo}\n\n*Aún no tienes números reservados* 😅\n\n*¿Te aparto unos antes de que se agoten? 🔥*`,
+    `${saludo}\n\n*Aún no tienes números registrados 😅*`,
     `${saludo}\n\nTodavía no has apartado números para esta dinámica ❌👀`,
-    `${saludo}\n\nTodavía no tienes números apartados 🚫👀`,
-    `${saludo}\n\nNo tienes números registrados ❌\n\nAún estás a tiempo de entrar 💰`,
-    `${saludo}\n\nNo tienes números activos 🚫\n\nAprovecha antes de que se llenen 🔥`
+    `${saludo}\n\n*Todavía no tienes números apartados 🚫👀*`,
+    `${saludo}\n\n*No tienes números registrados ❌*\n\nAún estás a tiempo de entrar 💰`,
+    `${saludo}\n\n*No tienes números activos 🚫*\n\nAprovecha antes de que se llenen 🔥`
   ];
 }
 
@@ -56,8 +56,8 @@ export function frasesSinNumerosSinSaludo() {
   return [
     "*Sin números registrados por ahora 📭*",
     "*Todavía no has apartado números 👀❌*",
-    "*Sin números por ahora 🚫*\n\nAprovecha antes de que se acaben 🔥",
-    "*Aún no tienes números 😅*\n\n¿Quieres que te aparte algunos? 🔥"
+    "*Sin números por ahora 🚫*\n\n*Aprovecha antes de que se acaben* 🔥",
+    "*Aún no tienes números 😅*\n\n*¿Quieres que te aparte algunos?* 🔥"
   ];
 }
 

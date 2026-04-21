@@ -30,9 +30,9 @@ Que estamos jugando *${evento.nombre_evento}* ✍️👀
 
 Sorteo activo *${evento.nombre_evento}* 🎯
 
-Recuerden ir cancelando para evitar liberaciones ⚠️
+*Recuerden ir cancelando para evitar liberaciones ⚠️*
 
-💰 Valor: ${evento.valor}
+💰 Valor: *${evento.valor}*
 
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`,
@@ -50,11 +50,11 @@ Estamos jugando *${evento.nombre_evento}* ✍️
 
 `🚨 *Ojo grupo*
 
-Números sin cancelar en *${evento.nombre_evento}* serán liberados ⚠️
+*Aseguren sus jugadas ☘️*
 
-Aseguren sus jugadas ☘️
+*Números sin cancelar con ${evento.nombre_evento} serán liberados media hora anten que juegue ⚠️*
 
-💰 Valor: ${evento.valor}
+💰 Valor: *${evento.valor}*
 
 🏦 *Nequi - Daviplata - Bre-B*
 ➡️ *3014123951*`,
