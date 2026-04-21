@@ -2,6 +2,7 @@
 
 import { supabase } from "./supabase.js";
 import { horaColombia, ahoraColombia, yaPasoHora } from "./tiempoColombia.js";
+import { obtenerTablaPorValor } from "./tablasConfig.js";
 
 import {
   extraerEventos,
@@ -18,16 +19,18 @@ export async function detectarEvento(sock, grupoId, texto) {
 
   if (!texto) return;
 
+  // ✅ PRIMERO extraer evento
   const ev = extraerEventos(texto);
 
-  // 🔴 si no detecta evento válido → salir
   if (!ev || !ev.hora) {
     console.log("⚠️ No se pudo extraer evento válido");
     return;
   }
 
-  const hoy = new Date().toISOString().split("T")[0];
+  // ✅ DESPUÉS usar ev
+  const tabla = obtenerTablaPorValor(ev.valor);
 
+  const hoy = new Date().toISOString().split("T")[0];
   const numeros = obtenerNumerosValidos();
 
   const { data, error: errorConsulta } = await supabase
@@ -35,6 +38,11 @@ export async function detectarEvento(sock, grupoId, texto) {
     .select("*")
     .eq("grupo_id", grupoId)
     .limit(1);
+
+    if (!tabla) {
+  console.log("❌ No hay tabla para valor:", ev.valor);
+  return;
+}
 
   if (errorConsulta) {
     console.log("❌ Error consultando BD:", errorConsulta.message);
@@ -71,7 +79,6 @@ export async function detectarEvento(sock, grupoId, texto) {
   }
 
   // ✅ INSERTAR NUEVO EVENTO
-  // ✅ INSERTAR NUEVO EVENTO
 const { data: eventoInsertado, error } = await supabase
   .from("eventos_bot")
   .insert({
@@ -82,7 +89,8 @@ const { data: eventoInsertado, error } = await supabase
     fecha_evento: hoy,
     estado: "abierto",
     valor: ev.valor,
-    premios: ev.premios
+    premios: ev.premios,
+    tabla: tabla // 🔥 NUEVO CAMPO CLAVE
   })
   .select()
   .single();

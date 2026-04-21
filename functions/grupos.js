@@ -1,28 +1,28 @@
 export const GRUPOS_PERMITIDOS = {
 
   "120363418497965618@g.us": {
-    nombre: "#1 efaat Diarias",
-    tabla:  "5k_15k_reservas_2_cifras" // 👈 NOMBRE REAL
+    nombre: "#𝟏 𝐄𝐟𝐚𝐚𝐭 𝐝𝐢𝐧𝐚́𝐦𝐢𝐜𝐚𝐬 𝐀𝐧𝐝𝐫𝐞𝐬 𝐌𝐞𝐫𝐜𝐚𝐝𝐨 💎"
   },
   
   "120363422425898785@g.us": {
-    nombre: "#2 efaat grupo",
-    tabla:  "5k_15k_reservas_2_cifras" // 👈 NOMBRE REAL
+    nombre: "#𝟐╺ 𝑬𝒇𝒂𝒂𝒕 𝑫𝒊𝒂𝒓𝒊𝒂𝒔 𝟓‐𝟏𝟓𝐊 💎"
   },
 
   "120363420487085193@g.us": {
-    nombre: "#3 Efaat Clup",
-    tabla:  "5k_15k_reservas_2_cifras" // 👈 NOMBRE REAL
+    nombre: "#𝟑╺ 𝐄𝐟𝐚𝐚𝐭 𝐂𝐥𝐮𝐛 𝟓–𝟏𝟓𝐊╺ 𝐀𝐌 🛡️"
   },
   
   "120363425078329823@g.us": {
-    nombre: "Gr PRUEVA",
-    tabla:  "5k_15k_reservas_2_cifras" // 👈 NOMBRE REAL
+    nombre: "Gr PRUEVA"
   },
 
   "120363409613068259@g.us": {
-    nombre: "PRUEVA SAAS",
-    tabla:  "reservas_dos_cifras" // 👈 NOMBRE REAL
+    nombre: "PRUEVA SAAS"
+  },
+
+  "120363028470118675@g.us": {
+   nombre:  "#4 - 𝑬𝒇𝒂𝒂𝒕 𝑬́𝒍𝒊𝒕𝒆 𝑨𝒄𝒄𝒆𝒔𝒔 𝑨𝒏𝒅𝒓𝒆𝒔 𝑴𝒆𝒓𝒄𝒂𝒅𝒐 ⚜️🔥"
   }
+
 };
 

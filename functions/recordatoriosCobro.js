@@ -6,8 +6,8 @@ const mapaTiempos = {
   10000: [360, 180, 60],
   5000: [300, 120, 45],
   2000: [150, 60],
-  1500: [150, 60],
-  1000: [120, 45]
+  1500: [120, 90, 60, 30],
+  1000: [120, 5]
 };
 
 // 🎲 MENSAJES ALEATORIOS (SE MANTIENE 🔥)
@@ -80,7 +80,14 @@ No se queden por fuera ☘️🎯
 
 export async function crearCobrosEvento(evento) {
 
+  
+
   console.log("📦 EVENTO RECIBIDO:", evento);
+
+await supabase
+  .from("cobros")
+  .delete()
+  .eq("evento_id", evento.id);
 
   if (!evento.valor || !evento.hora_cierre) {
     console.log("❌ Falta valor u hora_cierre");
@@ -157,7 +164,7 @@ export async function crearCobrosEvento(evento) {
 }
 
 //////////////////////////////////////////////////////
-// 🔁 2. PROCESAR COBROS (REEMPLAZA setTimeout)
+// 🔁 2. PROCESAR COBROS (ANTI DUPLICADOS)
 //////////////////////////////////////////////////////
 
 export async function procesarCobros(sock) {
@@ -175,38 +182,55 @@ export async function procesarCobros(sock) {
     return;
   }
 
+  if (!cobros || cobros.length === 0) return;
+
   for (const cobro of cobros) {
 
     try {
 
-      // 🔥 traer evento
-      const { data: evento } = await supabase
+      // 🔥 TRAER EVENTO
+      const { data: evento, error: errorEvento } = await supabase
         .from("eventos_bot")
         .select("*")
         .eq("id", cobro.evento_id)
         .single();
 
-      if (!evento) continue;
+      if (errorEvento || !evento) {
+        console.log("⚠️ Evento no encontrado:", cobro.evento_id);
+        continue;
+      }
 
-// 🔴 NUEVA VALIDACIÓN
-if (evento.estado === "cerrado") {
-  console.log("⛔ Evento cerrado, no se envía cobro");
-  continue;
-}
+      // 🔴 NO ENVIAR SI ESTÁ CERRADO
+      if (evento.estado === "cerrado") {
+        console.log("⛔ Evento cerrado:", cobro.evento_id);
+        continue;
+      }
 
-      const mensaje = mensajeCobroAleatorio(evento);
-
-      await sock.sendMessage(cobro.grupo_id, { text: mensaje });
-
-      await supabase
+      // 🔒 BLOQUEO ANTI DUPLICADOS (CLAVE)
+      const { data: actualizado, error: errorUpdate } = await supabase
         .from("cobros")
         .update({
           enviado: true,
           enviado_en: ahoraColombia().toISOString()
         })
-        .eq("id", cobro.id);
+        .eq("id", cobro.id)
+        .eq("enviado", false)
+        .select()
+        .single();
 
-      console.log(`💰 Cobro ${cobro.numero_cobro} enviado`);
+      // ❌ si falló update o ya lo tomó otro proceso
+      if (errorUpdate || !actualizado) {
+        console.log("⛔ Cobro ya procesado:", cobro.id);
+        continue;
+      }
+
+      // ✉️ GENERAR MENSAJE
+      const mensaje = mensajeCobroAleatorio(evento);
+
+      // 📲 ENVIAR
+      await sock.sendMessage(cobro.grupo_id, { text: mensaje });
+
+      console.log(`💰 Cobro ${cobro.numero_cobro} enviado correctamente`);
 
     } catch (err) {
       console.log("❌ Error enviando cobro:", err.message);

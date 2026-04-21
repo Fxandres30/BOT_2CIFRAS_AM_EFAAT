@@ -111,13 +111,32 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
   const numeros = extraerNumeros(texto);
   if (numeros.length === 0) return;
 
-  const { tabla, nombre: nombreGrupo } = configGrupo;
   const grupoId = msg.key.remoteJid;
+  const nombreGrupo = configGrupo.nombre;
+
+  // 🔥 TRAER EVENTO ACTIVO (CLAVE DEL SISTEMA)
+  const { data: evento, error: errorEvento } = await supabase
+    .from("eventos_bot")
+    .select("tabla, estado")
+    .eq("grupo_id", grupoId)
+    .eq("estado", "abierto")
+    .single();
+
+  if (errorEvento || !evento) {
+    console.log("⚠️ No hay evento activo:", grupoId);
+    return;
+  }
+
+  const tabla = evento.tabla;
+
+  if (!tabla) {
+    console.log("⚠️ Evento sin tabla:", grupoId);
+    return;
+  }
 
   // 🔥 USUARIO DESDE JID
   const { telefonoFinal, lidFinal } = await obtenerUsuario(jidUsuario);
 
-  // ✅ ID ÚNICO (CLAVE)
   let usuarioId = telefonoFinal || lidFinal;
 
   if (!usuarioId) {
@@ -125,7 +144,6 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
     return;
   }
 
-  // log limpio
   if (!telefonoFinal) {
     console.log("ℹ️ Usuario LID:", lidFinal);
   }
@@ -134,13 +152,18 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
 
   console.log("👤 Usuario:", nombre);
   console.log("🆔 ID:", usuarioId);
+  console.log("📊 Tabla usada:", tabla);
 
+  // 🔎 CONSULTAR NÚMEROS
   const { data, error } = await supabase
     .from(tabla)
     .select("numero, estado, contacto")
     .in("numero", numeros);
 
-  if (error) return;
+  if (error) {
+    console.log("❌ Error consultando números:", error.message);
+    return;
+  }
 
   const ocupadosPorOtros = data
     .filter(n => n.estado !== "libre" && n.contacto !== usuarioId)
@@ -174,6 +197,7 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
 
   const reservados = [];
 
+  // 🔥 RESERVAR
   for (const numero of disponibles) {
 
     const { data: updateData } = await supabase
@@ -193,6 +217,7 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
     }
   }
 
+  // 📩 RESPUESTAS
   if (ocupadosPorOtros.length === 0) {
 
     await responder(
@@ -221,6 +246,7 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
     await responder(sock, grupoId, respuesta, msg);
   }
 
+  // 📲 NOTIFICAR ADMIN
   if (reservados.length > 0) {
 
     await sock.sendMessage(NUMERO_ADMIN, {
@@ -230,6 +256,7 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
 🆔 ID: ${usuarioId}
 📞 Teléfono: ${telefonoFinal || "No disponible"}
 📍 Grupo: ${nombreGrupo}
+📊 Tabla: ${tabla}
 🔢 Números: ${reservados.join(", ")}`
     });
   }

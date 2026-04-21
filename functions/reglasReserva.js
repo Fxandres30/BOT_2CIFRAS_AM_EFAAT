@@ -2,16 +2,24 @@ import { normalizarTexto } from "./normalizarTexto.js";
 
 export const PALABRAS_NO_PERMITIDAS = [
   "ok", "cancelo", "cancelar", "cancelado", "libero",
-  "listo", "vale", "libero", "minutos","mande", "querido",
+  "listo", "vale", "minutos", "mande", "querido",
   "pm", "hora", "horas", "mañana", "quedan", "personas", 
   "dale", "de acuerdo", "perfecto", "familia", "consignar",
   "confirmado", "gana", "premio", "sorteo", "nequi",
-  "❌", "✅", "✨", "🚨", "📊", "🔥",   // 👈 emojis prohibidos
+  
+  // emojis
+  "❌", "✅", "✨", "🚨", "📊", "🔥",
   "☀️", "🌅", "🌆", "🌙", "🎯",
-  "💰",  "👀",  "🤝",  "🚫", "📭", "🚀",
-  "pago", "pague", "tengo", "estaba", "solo", "ultimos",
-  "pagado", "reservado", "reservar", "reservados","cariño",
-  "grupo", "persona", "numeritos", "todos", "envío",
+  "💰", "👀", "🤝", "🚫", "📭", "🚀",
+
+  // estados / acciones
+  "pago", "pague", "pagado",
+  "reservado", "reservar", "reservados",
+  "tengo", "estaba", "solo", "ultimos",
+
+  // extras únicos
+  "cariño", "grupo", "persona", "numeritos", "todos", "envío",
+  "sociedad", "sociedades", "mitad"
 ];
 
 export function textoPermitidoParaReserva(texto) {
