@@ -1,6 +1,7 @@
 import { getContentType } from "@whiskeysockets/baileys";
 import { procesarReserva } from "./reservas.js";
 import { procesarPago } from "./pagos.js";
+import { supabase } from "./supabase.js";
 
 import {
   esConsultaNumeros,
@@ -37,7 +38,7 @@ export async function procesarEntrada(sock, msg, configGrupo, jidUsuario) {
   console.log("📩 MENSAJE DETECTADO");
   console.log("👤 Usuario:", msg.pushName || "Sin nombre");
   console.log("📍 Grupo:", configGrupo.nombre);
-  console.log("🗄️ Tabla:", configGrupo.tabla);
+  console.log("🗄️ Tabla: dinámica por evento");
 
   const tipo = getContentType(msg.message);
   console.log("📦 Tipo de mensaje:", tipo);
@@ -95,10 +96,25 @@ export async function procesarEntrada(sock, msg, configGrupo, jidUsuario) {
 
     try {
 
-      const { reservados, pagados } = await obtenerNumerosUsuario(
-        jidUsuario,
-        configGrupo.tabla
-      );
+      // 🔥 TRAER EVENTO ACTIVO
+const { data: evento } = await supabase
+  .from("eventos_bot")
+  .select("tabla, estado")
+  .eq("grupo_id", msg.key.remoteJid)
+  .eq("estado", "abierto")
+  .single();
+
+if (!evento || !evento.tabla) {
+  console.log("⛔ No hay evento activo para consulta");
+  return;
+}
+
+const tabla = evento.tabla;
+
+const { reservados, pagados } = await obtenerNumerosUsuario(
+  jidUsuario,
+  tabla
+);
 
       // 🔥 LOGS PRO
       console.log("📊 RESULTADO DB:");
