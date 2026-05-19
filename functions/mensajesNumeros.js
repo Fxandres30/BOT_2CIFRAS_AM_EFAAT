@@ -5,10 +5,10 @@ export function frasesReservadosConSaludo(saludo, lista) {
   return [
     `*${saludo}*\n\nActualmente tienes reservados:\n🎟️ ${lista}\n\nPendientes de confirmación ⏳`,
     `*${saludo}*\n\nLlevas el número *${lista}* apartado 🔥`,
-    `*${saludo}*\n\nPor ahora vas con:\n🎟️ ${lista}\n\nEstán apartados para ti 😉`,
-    `*${saludo}*\n\nVas participando con:\n🎟️ ${lista}\n\nCompleta el pago para asegurarlos 💰`,
-    `*${saludo}*\n\nYa tienes separados:\n🔥 ${lista}\n\nNo los dejes ir, confírmalos antes de que se liberen ⚠️`,
-    `*${saludo}*\n\n*TUS NÚMEROS APARTADOS SON:*\n\n🔹 ${lista}\n\nRecuerda cancelarlos a tiempo para no perderlos 🔥`
+    `*${saludo}*\n\nPor ahora vas con:\n🎟️ *${lista}*\n\nEstán apartados para ti 😉`,
+    `*${saludo}*\n\nVas participando con:\n🎟️ *${lista}*\n\nCompleta el pago para asegurarlos 💰`,
+    `*${saludo}*\n\nYa tienes separados:\n🔥 *${lista}*\n\nNo los dejes ir, confírmalos antes de que se liberen ⚠️`,
+    `*${saludo}*\n\n*TUS NÚMEROS APARTADOS SON:*\n\n🔹 *${lista}*\n\nRecuerda cancelarlos a tiempo para no perderlos 🔥`
   ];
 }
 
@@ -26,17 +26,17 @@ export function frasesPagadosConSaludo(saludo, lista) {
   return [
     `*${saludo}*\n\nYa tienes el *${lista}* pago ✅`,
     `*${saludo}*\n\nTus números *${lista}* están confirmados 💰`,
-    `*${saludo}*\n\n*Tiene el ${lista} pero ya estan cancelados* 🔥✅*`,
+    `*${saludo}*\n\n*Tiene el *${lista}* pero ya estan cancelados* 🔥✅*`,
     `*${saludo}*\n\nTodo listo, *${lista}* confirmados 🎯`
   ];
 }
 
 export function frasesPagadosSinSaludo(lista) {
   return [
-    `Ya tienes el *${lista}* pago ✅`,
-    `Tus números *${lista}* están confirmados 💰`,
-    `El *${lista}* ya está cancelado 🔥`,
-    `Todo listo, *${lista}* confirmado 🎯`
+    `Ya tienes el *${lista}* pagos ✅`,
+    `Tus números *${lista}* ya están confirmados 💰`,
+    `Tiene el *${lista}* ya cancelados 🔥`,
+    `Todo listo, *${lista}* ya estan confirmados 🎯`
   ];
 }
 
@@ -64,17 +64,17 @@ export function frasesSinNumerosSinSaludo() {
 // 🔹 MIXTOS
 export function frasesMixtasConSaludo(saludo, reservados, pagados) {
   return [
-    `*${saludo}*\n\nAsí vas con tus números 👇\n\n💰 ${pagados}\n📌 ${reservados}\n\nSolo falta confirmar los pendientes 🔥`,
-    `*${saludo}*\n\nYa tienes confirmados: *${pagados}* ✅\nY el *${reservados}* aún pendiente de pago 🔥`,
-    `*${saludo}*\n\nPor ahora vas con:\n\n💰 ${pagados}\n📌 ${reservados}\n\nConfirma los pendientes para participar 💯`
+    `*${saludo}*\n\nAsí vas con tus números 👇\n\n💰 *${pagados}* ya estan cancelados ✅\n📌 *${reservados}* pendientes por cancelar 👀\n\nSolo falta confirmar los pendientes 🔥`,
+    `*${saludo}*\n\nYa tienes confirmados el *${pagados}* ✅\nY el *${reservados}* aún pendiente de pago 🔥`,
+    `*${saludo}*\n\nPor ahora vas con el\n\n💰 *${pagados}*\n📌 *${reservados}*\n\nConfirma los pendientes para participar 💯`
   ];
 }
 
 export function frasesMixtasSinSaludo(listaPagados, listaReservados) {
   return [
-    `Vas con estos números 👇\n\n💰 ${listaPagados}\n📌 ${listaReservados}\n\nSolo falta confirmar los pendientes 🔥`,
-    `Ya tienes pagos confirmados: *${listaPagados}* ✅\nY el *${listaReservados}* aún pendiente 👀🔥`,
-    `Por ahora vas con:\n\n💰 ${listaPagados} cancelados ✅\n📌 ${listaReservados}\n\nConfirma los pendientes 💯`
+    `*Vas con estos números 👇*\n\n💰 *${listaPagados}* ya cancelados. \n📌 *${listaReservados}* aun sin cancelar.👀 \n\n*Solo falta confirmar los pendientes 🔥*`,
+    `Ya tienes pagos y confirmados el *${listaPagados}* ✅\n\nY el *${listaReservados}* aún pendiente por cancelar 👀🔥`,
+    `Por ahora va con el *${listaPagados}* ya cancelados ✅\n\n📌 y el *${listaReservados}* aun pendientes de pago.\n\n*Confirma los pendientes. 💯*`
   ];
 }
 

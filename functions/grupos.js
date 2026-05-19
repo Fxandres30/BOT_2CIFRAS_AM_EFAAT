@@ -12,8 +12,8 @@ export const GRUPOS_PERMITIDOS = {
     nombre: "#𝟑╺ 𝐄𝐟𝐚𝐚𝐭 𝐂𝐥𝐮𝐛 𝟓–𝟏𝟓𝐊╺ 𝐀𝐌 🛡️"
   },
   
-  "120363425078329823@g.us": {
-    nombre: "Gr PRUEVA"
+  "120363427866905762@g.us": {
+    nombre: "PRUEVA"
   },
 
   "120363409613068259@g.us": {

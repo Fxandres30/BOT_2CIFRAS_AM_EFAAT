@@ -1,184 +1,386 @@
-import { ADMINS, STICKER_PAGO_ID, NUMERO_NOTIFICACION } from "./config.js";
-import { supabase } from "./supabase.js";
 
-console.log("🔥 PAGOS ALINEADO");
-
-// 🔥 limpiar número
-const limpiarNumero = (jid = "") => jid.split("@")[0];
-
-// 🔥 obtener usuario desde JID (MISMA LÓGICA QUE RESERVAS)
-async function obtenerUsuario(jidUsuario) {
-
-  let telefono = null;
-  let lid = null;
-
-  if (jidUsuario.includes("@s.whatsapp.net")) {
-    telefono = jidUsuario.replace("@s.whatsapp.net", "").replace(/^57/, "");
-  }
-
-  if (jidUsuario.includes("@lid")) {
-    lid = jidUsuario;
-  }
-
-  let telefonoFinal = telefono;
-  let lidFinal = lid;
-
-  // buscar lid
-  if (telefonoFinal) {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("lid")
-      .eq("telefono", telefonoFinal)
-      .limit(1);
-
-    if (data?.length) lidFinal = data[0].lid;
-  }
-
-  // buscar telefono
-  if (!telefonoFinal && lidFinal) {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("telefono")
-      .eq("lid", lidFinal)
-      .limit(1);
-
-    if (data?.length) telefonoFinal = data[0].telefono;
-  }
-
-  return { telefonoFinal, lidFinal };
+import {
+  STICKER_PAGO_ID,
+  NUMERO_NOTIFICACION
 }
+from "./config.js";
 
-export async function procesarPago(sock, msg, configGrupo, jidUsuario) {
+import {
+  supabase
+}
+from "./supabase.js";
 
-  console.log("\n💰 procesarPago ACTIVADO");
+import {
+  enviarMensaje
+}
+from "./enviar.js";
 
-  const sticker = msg.message?.stickerMessage;
-  if (!sticker) return;
+import {
+  obtenerUsuarioGlobal
+}
+from "./usuarioGlobal.js";
 
-  const stickerID = sticker.fileSha256
-    ? Buffer.from(sticker.fileSha256).toString("base64")
-    : null;
+import {
+  obtenerAdminsGrupo
+}
+from "./cacheAdmins.js";
 
-  console.log("🧩 Sticker ID:", stickerID);
+console.log(
+  "🔥 PAGOS ALINEADO"
+);
 
-  const grupoId = msg.key.remoteJid;
+/* 🔥 PROCESAR PAGO */
+export async function procesarPago(
 
-  const metadata = await sock.groupMetadata(grupoId);
+  sock,
+  msg,
+  configGrupo,
+  jidUsuario
 
-  const esAdmin = metadata.participants.some(p =>
-    (p.id === jidUsuario || p.id === msg.key.participant) &&
-    (p.admin === "admin" || p.admin === "superadmin")
+) {
+
+  console.log(
+    "\n💰 procesarPago ACTIVADO"
   );
 
-  // 🔥 VALIDAR ADMIN
+  // 🔥 sticker
+  const sticker =
+    msg.message?.stickerMessage;
+
+  if (!sticker) {
+    return;
+  }
+
+  // 🔥 sticker id
+  const stickerID =
+
+    sticker.fileSha256
+
+      ? Buffer
+          .from(
+            sticker.fileSha256
+          )
+          .toString("base64")
+
+      : null;
+
+  console.log(
+    "🧩 Sticker ID:",
+    stickerID
+  );
+
+  const grupoId =
+    msg.key.remoteJid;
+
+  // 🔥 admins cacheados
+  const admins =
+    await obtenerAdminsGrupo(
+      sock,
+      grupoId
+    );
+
+  const esAdmin =
+
+    admins.includes(
+      jidUsuario
+    )
+
+    ||
+
+    admins.includes(
+      msg.key.participant
+    );
+
+  // 🔥 validar admin
   if (!esAdmin) {
-    console.log("⛔ No es admin");
+
+    console.log(
+      "⛔ No es admin"
+    );
+
     return;
   }
 
-  console.log("✅ ES ADMIN");
+  console.log(
+    "✅ ES ADMIN"
+  );
 
-  // 🔒 validar sticker
-  if (!STICKER_PAGO_ID.includes(stickerID)) {
-    console.log("⛔ Sticker no válido");
+  // 🔥 validar sticker
+  if (
+    !STICKER_PAGO_ID.includes(
+      stickerID
+    )
+  ) {
+
+    console.log(
+      "⛔ Sticker no válido"
+    );
+
     return;
   }
 
-  // 🔥 CLIENTE
+  // 🔥 cliente
   const clienteJid =
-    sticker.contextInfo?.participant ||
-    sticker.contextInfo?.remoteJid ||
+
+    sticker.contextInfo
+      ?.participant
+
+    ||
+
+    sticker.contextInfo
+      ?.remoteJid
+
+    ||
+
     null;
 
   if (!clienteJid) {
-    console.log("⚠️ No se pudo obtener cliente");
+
+    console.log(
+      "⚠️ No se pudo obtener cliente"
+    );
+
     return;
   }
 
-  console.log("👤 Cliente JID:", clienteJid);
+  console.log(
+    "👤 Cliente JID:",
+    clienteJid
+  );
 
-  const { telefonoFinal, lidFinal } = await obtenerUsuario(clienteJid);
+  // 🔥 usuario global
+  const usuario =
+    await obtenerUsuarioGlobal(
+      clienteJid
+    );
 
-  if (!telefonoFinal && !lidFinal) {
-    console.log("⚠️ No se pudo identificar cliente");
+  if (!usuario) {
+
+    console.log(
+      "⚠️ Cliente inválido"
+    );
+
     return;
   }
 
-  console.log("📞 Teléfono final:", telefonoFinal);
-  console.log("🆔 LID final:", lidFinal);
+  const telefonoFinal =
+    usuario.telefono;
 
-  // 🔥🔥🔥 NUEVO: TRAER EVENTO ACTIVO (CLAVE)
-  const { data: evento, error: errorEvento } = await supabase
+  const lidFinal =
+    usuario.lid;
+
+  console.log(
+    "📞 Teléfono:",
+    telefonoFinal
+  );
+
+  console.log(
+    "🆔 LID:",
+    lidFinal
+  );
+
+  // 🔥 evento activo
+  const {
+    data: evento,
+    error: errorEvento
+  } = await supabase
+
     .from("eventos_bot")
-    .select("tabla, estado")
-    .eq("grupo_id", grupoId)
-    .eq("estado", "abierto")
+
+    .select(
+      "tabla, estado"
+    )
+
+    .eq(
+      "grupo_id",
+      grupoId
+    )
+
+    .eq(
+      "estado",
+      "abierto"
+    )
+
     .single();
 
-  if (errorEvento || !evento) {
-    console.log("⛔ No hay evento activo");
+  if (
+    errorEvento ||
+    !evento
+  ) {
+
+    console.log(
+      "⛔ No hay evento activo"
+    );
+
     return;
   }
 
-  const tabla = evento.tabla;
+  const tabla =
+    evento.tabla;
 
   if (!tabla) {
-    console.log("❌ Evento sin tabla");
+
+    console.log(
+      "❌ Evento sin tabla"
+    );
+
     return;
   }
 
-  console.log("🗄️ Tabla usada:", tabla);
+  console.log(
+    "🗄️ Tabla:",
+    tabla
+  );
 
-  // 🔎 buscar reservas
-  const { data: reservas, error } = await supabase
-    .from(tabla)
-    .select("numero, comprador")
-    .or(`contacto.eq.${telefonoFinal},contacto.eq.${lidFinal}`);
+// 🔥 ID GLOBAL
+const usuarioId =
+
+  telefonoFinal ||
+  lidFinal;
+
+if (!usuarioId) {
+
+  console.log(
+    "⚠️ Usuario sin ID global"
+  );
+
+  return;
+}
+
+// 🔥 buscar reservas
+const {
+  data: reservas,
+  error
+} = await supabase
+
+  .from(tabla)
+
+  .select(
+    "numero, comprador"
+  )
+
+.in(
+  "contacto",
+
+  [
+    telefonoFinal,
+    lidFinal
+  ].filter(Boolean)
+);
 
   if (error) {
-    console.error("❌ Error buscando reservas:", error.message);
+
+    console.error(
+      "❌ Error buscando reservas:",
+      error.message
+    );
+
     return;
   }
 
   if (!reservas?.length) {
-    console.log("⚠️ Cliente sin reservas");
+
+    console.log(
+      "⚠️ Cliente sin reservas"
+    );
+
     return;
   }
 
-  const numeros = reservas.map(r => r.numero);
-  const comprador = reservas[0].comprador || "Sin nombre";
+  const numeros =
+    reservas.map(
+      r => r.numero
+    );
 
-  console.log("🔢 Números encontrados:", numeros);
+  const comprador =
 
-  // ✅ marcar pagado
-  const { error: errorUpdate } = await supabase
+    reservas[0]?.comprador
+
+    ||
+
+    "Sin nombre";
+
+  console.log(
+    "🔢 Números:",
+    numeros
+  );
+
+  // 🔥 marcar pagado
+  const {
+    error: errorUpdate
+  } = await supabase
+
     .from(tabla)
-    .update({ estado: "pagado" })
-    .or(`contacto.eq.${telefonoFinal},contacto.eq.${lidFinal}`);
+
+    .update({
+      estado: "pagado"
+    })
+
+    .eq(
+      "estado",
+      "reservado"
+    )
+  
+.in(
+
+  "contacto",
+
+  [
+    telefonoFinal,
+    lidFinal
+  ].filter(Boolean)
+
+);
 
   if (errorUpdate) {
-    console.error("❌ Error marcando pagado:", errorUpdate.message);
+
+    console.error(
+      "❌ Error marcando pagado:",
+      errorUpdate.message
+    );
+
     return;
   }
 
-  console.log("✅ Pago marcado correctamente");
+  console.log(
+    "✅ Pago marcado"
+  );
 
-  // 📤 notificación
-  const mensaje = `
-✅ *PAGO CONFIRMADO*
+  // 🔥 mensaje
+  const mensaje =
+
+`✅ *PAGO CONFIRMADO*
 
 👤 Cliente: *${comprador}*
-📍 Grupo: ${configGrupo.nombre}
-🔢 Números: *( ${numeros.join(" - ")} )*
-`;
+📍 Grupo: *${configGrupo.nombre}*
+🔢 Números: *( ${numeros.join(" - ")} )*`;
 
-  if (Array.isArray(NUMERO_NOTIFICACION)) {
+  // 🔥 enviar notificaciones
+  if (
+    Array.isArray(
+      NUMERO_NOTIFICACION
+    )
+  ) {
+
     for (const numero of NUMERO_NOTIFICACION) {
-      await sock.sendMessage(numero, { text: mensaje });
+
+      await enviarMensaje(
+        sock,
+        numero,
+        mensaje
+      );
     }
+
   } else {
-    await sock.sendMessage(NUMERO_NOTIFICACION, { text: mensaje });
+
+    await enviarMensaje(
+      sock,
+      NUMERO_NOTIFICACION,
+      mensaje
+    );
   }
 
-  console.log("📤 Confirmación enviada a notificaciones");
+  console.log(
+    "📤 Confirmación enviada"
+  );
 }

@@ -1,215 +1,246 @@
 import { supabase } from "./supabase.js";
-import { NUMERO_ADMIN } from "./config.js";
-import { textoPermitidoParaReserva } from "./reglasReserva.js";
+
+import { NUMERO_ADMIN }
+from "./config.js";
 
 import {
-  mensajesTodosLibres,
-  mensajesTodosOcupados,
-  mensajeAleatorio,
-  encabezadosReservados,
-  encabezadosOcupados
-} from "./mensajes.js";
+  textoPermitidoParaReserva
+} from "./reglasReserva.js";
 
-import { delayEscritura } from "./typing.js";
+import {
+  enviarMensaje
+} from "./enviar.js";
 
-/* extraer números */
-function extraerNumeros(texto) {
-  return texto
-    .toLowerCase()
+import {
+  extraerNumeros
+} from "./numeros.js";
 
-    // 🔹 separar letras pegadas a números (el16 → el 16)
-    .replace(/([a-z])(\d)/g, "$1 $2")
-    .replace(/(\d)([a-z])/g, "$1 $2")
-
-    // 🔹 separar conectores tipo "23y45"
-    .replace(/(\d)(y)(\d)/g, "$1 $3")
-
-    // 🔹 separar símbolos
-    .replace(/[_\-.,;/|\\()]+/g, " ")
-
-    // 🔹 dividir palabras
-    .split(/\s+/)
-
-    // 🔥 SOLO tokens válidos de 2 caracteres
-    .map(token => {
-      if (/^[0-9o]{2}$/.test(token)) {
-        return token.replace(/o/g, "0");
-      }
-      return token;
-    })
-
-    .join(" ")
-
-    // 🔹 extraer solo números de 2 cifras
-    .match(/\b\d{2}\b/g)
-
-    // 🔹 limitar rango
-    ?.filter(n => Number(n) <= 99) || [];
+import {
+  obtenerUsuarioGlobal
 }
+from "./usuarioGlobal.js";
 
-/* responder */
-async function responder(sock, jid, texto, msg, delay = 1500) {
-  await delayEscritura(sock, jid, delay);
-  await sock.sendMessage(jid, { text: texto }, { quoted: msg });
+import {
+  crearRespuestaReserva
 }
+from "./respuestasReserva.js";
 
-/* 🔥 OBTENER USUARIO DESDE JID */
-async function obtenerUsuario(jidUsuario) {
+/* 🔥 PROCESAR RESERVA */
+export async function procesarReserva(
 
-  let telefono = null;
-  let lid = null;
+  sock,
+  msg,
+  texto,
+  configGrupo,
+  jidUsuario
 
-  if (jidUsuario.includes("@s.whatsapp.net")) {
-    telefono = jidUsuario.replace("@s.whatsapp.net", "").replace(/^57/, "");
+) {
+
+  // 🔥 validar texto
+  if (!textoPermitidoParaReserva(texto)) {
+    return;
   }
 
-  if (jidUsuario.includes("@lid")) {
-    lid = jidUsuario;
-  }
-
-  let telefonoFinal = telefono;
-  let lidFinal = lid;
-
-  // buscar lid
-  if (telefonoFinal) {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("lid")
-      .eq("telefono", telefonoFinal)
-      .limit(1);
-
-    if (data?.length) lidFinal = data[0].lid;
-  }
-
-  // buscar telefono
-  if (!telefonoFinal && lidFinal) {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("telefono")
-      .eq("lid", lidFinal)
-      .limit(1);
-
-    if (data?.length) telefonoFinal = data[0].telefono;
-  }
-
-  return { telefonoFinal, lidFinal };
-}
-
-/* PROCESAR RESERVA */
-export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario) {
-
-  if (!textoPermitidoParaReserva(texto)) return;
-
+  // 🔥 ignorar multimedia
   if (
+
     msg.message?.imageMessage ||
     msg.message?.videoMessage ||
     msg.message?.stickerMessage ||
     msg.message?.documentMessage ||
     msg.message?.audioMessage
-  ) return;
 
-  const numeros = extraerNumeros(texto);
-  if (numeros.length === 0) return;
+  ) {
+    return;
+  }
 
-  const grupoId = msg.key.remoteJid;
-  const nombreGrupo = configGrupo.nombre;
+  // 🔥 extraer números
+  const numeros =
+    extraerNumeros(texto);
 
-  // 🔥 TRAER EVENTO ACTIVO (CLAVE DEL SISTEMA)
-  const { data: evento, error: errorEvento } = await supabase
+  if (numeros.length === 0) {
+    return;
+  }
+
+  const grupoId =
+    msg.key.remoteJid;
+
+  const nombreGrupo =
+    configGrupo.nombre;
+
+  // 🔥 buscar evento activo
+  const {
+    data: evento,
+    error: errorEvento
+  } = await supabase
+
     .from("eventos_bot")
+
     .select("tabla, estado")
+
     .eq("grupo_id", grupoId)
+
     .eq("estado", "abierto")
+
     .single();
 
   if (errorEvento || !evento) {
-    console.log("⚠️ No hay evento activo:", grupoId);
+
+    console.log(
+      "⚠️ No hay evento activo:",
+      grupoId
+    );
+
     return;
   }
 
   const tabla = evento.tabla;
 
   if (!tabla) {
-    console.log("⚠️ Evento sin tabla:", grupoId);
-    return;
-  }
 
-  // 🔥 USUARIO DESDE JID
-  const { telefonoFinal, lidFinal } = await obtenerUsuario(jidUsuario);
-
-  let usuarioId = telefonoFinal || lidFinal;
-
-  if (!usuarioId) {
-    console.log("❌ Usuario inválido:", jidUsuario);
-    return;
-  }
-
-  if (!telefonoFinal) {
-    console.log("ℹ️ Usuario LID:", lidFinal);
-  }
-
-  const nombre = msg.pushName || "Sin nombre";
-
-  console.log("👤 Usuario:", nombre);
-  console.log("🆔 ID:", usuarioId);
-  console.log("📊 Tabla usada:", tabla);
-
-  // 🔎 CONSULTAR NÚMEROS
-  const { data, error } = await supabase
-    .from(tabla)
-    .select("numero, estado, contacto")
-    .in("numero", numeros);
-
-  if (error) {
-    console.log("❌ Error consultando números:", error.message);
-    return;
-  }
-
-  const ocupadosPorOtros = data
-    .filter(n => n.estado !== "libre" && n.contacto !== usuarioId)
-    .map(n => n.numero);
-
-  const yaSonMios = data
-    .filter(n => n.contacto === usuarioId)
-    .map(n => n.numero);
-
-  const disponibles = numeros.filter(
-    n => !ocupadosPorOtros.includes(n) && !yaSonMios.includes(n)
-  );
-
-  if (
-    disponibles.length === 0 &&
-    ocupadosPorOtros.length === 0 &&
-    yaSonMios.length === numeros.length
-  ) return;
-
-  if (ocupadosPorOtros.length === numeros.length) {
-
-    await responder(
-      sock,
-      grupoId,
-      mensajeAleatorio(mensajesTodosOcupados),
-      msg
+    console.log(
+      "⚠️ Evento sin tabla:",
+      grupoId
     );
 
     return;
   }
 
+  // 🔥 usuario
+  const usuario =
+
+    await obtenerUsuarioGlobal(
+      jidUsuario
+    );
+
+  if (!usuario) {
+
+    console.log(
+      "❌ Usuario inválido:",
+      jidUsuario
+    );
+
+    return;
+  }
+
+  const telefonoFinal =
+    usuario.telefono;
+
+  const lidFinal =
+    usuario.lid;
+
+  // 🔥 ID GLOBAL
+  const usuarioId =
+
+    telefonoFinal ||
+    lidFinal;
+
+  // 🔥 consultar números
+  const {
+    data,
+    error
+  } = await supabase
+
+    .from(tabla)
+
+    .select(
+      "numero, estado, contacto, lib"
+    )
+
+    .in("numero", numeros);
+
+  if (error) {
+
+    console.log(
+      "❌ Error consultando:",
+      error.message
+    );
+
+    return;
+  }
+
+  // 🔥 ocupados por otros
+  const ocupadosPorOtros =
+
+    data
+
+      .filter(
+        n =>
+          n.estado !== "libre"
+          &&
+          n.contacto !== usuarioId
+      )
+
+      .map(n => n.numero);
+
+  // 🔥 ya reservados por mí
+  const yaSonMios =
+
+    data
+
+      .filter(
+        n =>
+          n.contacto === usuarioId
+      )
+
+      .map(n => n.numero);
+
+  // 🔥 disponibles
+  const disponibles =
+
+    numeros.filter(n =>
+
+      !ocupadosPorOtros.includes(n)
+      &&
+      !yaSonMios.includes(n)
+
+    );
+
+  // 🔥 todos ya son míos
+  if (
+
+    disponibles.length === 0 &&
+    ocupadosPorOtros.length === 0 &&
+    yaSonMios.length === numeros.length
+
+  ) {
+    return;
+  }
+
+  // 🔥 nombre
+  const nombre =
+
+    msg.pushName ||
+    "Sin nombre";
+
+  // 🔥 reservados finales
   const reservados = [];
 
-  // 🔥 RESERVAR
+  // 🔥 reservar números
   for (const numero of disponibles) {
 
-    const { data: updateData } = await supabase
+    const {
+      data: updateData
+    } = await supabase
+
       .from(tabla)
+
       .update({
+
         estado: "reservado",
+
         comprador: nombre,
+
         contacto: usuarioId,
+
         lib: lidFinal
+
       })
+
       .eq("numero", numero)
+
       .eq("estado", "libre")
+
       .select("numero");
 
     if (updateData?.length === 1) {
@@ -217,47 +248,52 @@ export async function procesarReserva(sock, msg, texto, configGrupo, jidUsuario)
     }
   }
 
-  // 📩 RESPUESTAS
-  if (ocupadosPorOtros.length === 0) {
+  // 🔥 crear respuesta
+  const respuesta =
 
-    await responder(
+    crearRespuestaReserva({
+
+      reservados,
+
+      ocupados:
+        ocupadosPorOtros
+
+    });
+
+  // 🔥 enviar respuesta
+  if (respuesta) {
+
+    enviarMensaje(
+
       sock,
       grupoId,
-      mensajeAleatorio(mensajesTodosLibres),
-      msg
+
+      respuesta,
+
+      {
+        quoted: msg
+      }
     );
-
-  } else {
-
-    let respuesta = "";
-
-    if (reservados.length > 0) {
-      const plantilla = mensajeAleatorio(encabezadosReservados);
-      const texto = plantilla.replace("{numeros}", reservados.join(" - "));
-      respuesta += `${texto}\n\n`;
-    }
-
-    if (ocupadosPorOtros.length > 0) {
-      const plantilla = mensajeAleatorio(encabezadosOcupados);
-      const texto = plantilla.replace("{numeros}", ocupadosPorOtros.join(" - "));
-      respuesta += texto;
-    }
-
-    await responder(sock, grupoId, respuesta, msg);
   }
 
-  // 📲 NOTIFICAR ADMIN
+  // 🔥 admin
   if (reservados.length > 0) {
 
-    await sock.sendMessage(NUMERO_ADMIN, {
-      text: `*📥 Reserva confirmada*
+    enviarMensaje(
+
+      sock,
+      NUMERO_ADMIN,
+
+`*📥 Reserva confirmada*
 
 👤 Usuario: *${nombre}*
 🆔 ID: *${usuarioId}*
 📞 Teléfono: *${telefonoFinal || "No disponible"}*
+🆔 LID: *${lidFinal || "No disponible"}*
 📍 Grupo: *${nombreGrupo}*
 📊 Tabla: *${tabla}*
 🔢 Números: *${reservados.join(", ")}*`
-    });
+
+    );
   }
 }

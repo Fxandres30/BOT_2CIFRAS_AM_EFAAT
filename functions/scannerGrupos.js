@@ -124,22 +124,6 @@ export async function escanearGrupos(sock) {
       .select("*", { count: "exact", head: true })
       .or("telefono.is.null,telefono.eq.");
 
-    // 🔥 MENSAJE FINAL
-    const mensaje = `
-📊 *ESCÁNER COMPLETADO*
-
-*📁 Grupos:* ${totalGrupos}
-*👥 Escaneados:* ${totalUsuarios}
-*🆕 Nuevos:* ${nuevos}
-*🔄 Actualizados:* ${actualizados}
-
-📦 *TOTAL EN BD:* ${count}
-📱 *Con teléfono:* ${conTelefono}
-❌ *Sin teléfono:* ${sinTelefono}
-
-⏰ ${fechaColombia()} ${horaColombia()}
-`;
-
     // 🔥 ENVIAR A TODOS
     for (const numero of NUMERO_NOTIFICACION) {
       await sock.sendMessage(numero, { text: mensaje });

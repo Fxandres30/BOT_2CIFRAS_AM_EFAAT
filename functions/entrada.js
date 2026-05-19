@@ -88,8 +88,15 @@ export async function procesarEntrada(sock, msg, configGrupo, jidUsuario) {
   texto = texto.toLowerCase().trim();
   console.log("🗣️ TEXTO FINAL:", texto);
 
-  // 🔥 EVENTOS
-  await detectarEvento(sock, msg.key.remoteJid, texto);
+
+// 🔥 EVENTOS
+const esEvento =
+
+  await detectarEvento(
+    sock,
+    msg.key.remoteJid,
+    texto
+  );
 
   // 🔥 CONSULTA DE NÚMEROS
   if (esConsultaNumeros(texto)) {

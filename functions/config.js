@@ -18,6 +18,5 @@ export const STICKER_PAGO_ID =  [
   ];
 
 export const NUMERO_NOTIFICACION = [
-  "573014123951@s.whatsapp.net",
-  "573001582621@s.whatsapp.net" // 👈 agrega aquí
+  "573014123951@s.whatsapp.net" // 👈 agrega aquí
 ];
