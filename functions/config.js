@@ -2,10 +2,10 @@ export const ADMINS = [
   "573104538811",
   "221951796732143",
   "3001582621",
-   "45123631075482",
-"257672972656751",
-"42361950367931",
-"48495264313467"
+  "45123631075482",
+ "257672972656751",
+ "42361950367931",
+ "48495264313467"
 ];
 
 export const NUMERO_ADMIN = "573014123951@s.whatsapp.net";
@@ -19,4 +19,4 @@ export const STICKER_PAGO_ID =  [
 
 export const NUMERO_NOTIFICACION = [
   "573014123951@s.whatsapp.net" // 👈 agrega aquí
-];
+];  

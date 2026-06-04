@@ -51,6 +51,7 @@ export function esConsultaNumeros(texto = "") {
 
   const tieneIntencion =
     t.includes("debo") ||
+    t.includes("devo") ||
     t.includes("tengo") ||
     t.includes("mis numeros") ||
     t.includes("mis numero") ||
@@ -68,6 +69,8 @@ export function esConsultaNumeros(texto = "") {
     t.includes("k debo") ||
     t === "tengo" ||
     t === "debo" ||
+    t === "devo" ||
+    t.includes("q devo") ||
     t === "mis numeros";
 
   return tieneIntencion || casosCortos;
