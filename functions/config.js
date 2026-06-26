@@ -8,7 +8,7 @@ export const ADMINS = [
  "48495264313467"
 ];
 
-export const NUMERO_ADMIN = "573014123951@s.whatsapp.net";
+export const NUMERO_ADMIN = "5730151@s.whatsapp.net";
 
 export const STICKER_PAGO_ID =  [
   "lQxamakRbsf6VaG30rTCo+Dmpw925rugJ6695kDydbQ=",
@@ -18,5 +18,5 @@ export const STICKER_PAGO_ID =  [
   ];
 
 export const NUMERO_NOTIFICACION = [
-  "573014123951@s.whatsapp.net" // 👈 agrega aquí
+  "573014tt1@s.whatsapp.net" // 👈 agrega aquí
 ];  
